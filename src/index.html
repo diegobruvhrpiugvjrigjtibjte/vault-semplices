@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
+<title>Secure Vault Desktop</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.0/index.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --win-accent: #0078D4;
+  --win-accent-hover: #106EBE;
+  --win-accent-pressed: #005A9E;
+  --win-accent-soft: rgba(0, 120, 212, 0.08);
+  --win-accent-border: rgba(0, 120, 212, 0.3);
+  --win-bg: #F3F3F3;
+  --win-surface: #FBFBFB;
+  --win-surface-2: #F5F5F5;
+  --win-card: #FFFFFF;
+  --win-card-hover: #FAFAFA;
+  --win-nav: rgba(243, 243, 243, 0.85);
+  --win-text: #1A1A1A;
+  --win-text-secondary: #616161;
+  --win-text-tertiary: #9E9E9E;
+  --win-border: rgba(0, 0, 0, 0.06);
+  --win-border-strong: rgba(0, 0, 0, 0.12);
+  --win-divider: rgba(0, 0, 0, 0.08);
+  --win-success: #107C10;
+  --win-warning: #FFB900;
+  --win-warning-text: #8a6100;
+  --win-danger: #D13438;
+  --win-shadow-2: 0 2px 4px rgba(0,0,0,0.04), 0 8px 16px rgba(0,0,0,0.06);
+  --win-shadow-3: 0 8px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+  --win-radius-sm: 4px;
+  --win-radius-md: 6px;
+  --win-radius-lg: 8px;
+  --win-font: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+html[data-theme="dark"] {
+  --win-accent: #60CDFF;
+  --win-accent-hover: #4FC3F7;
+  --win-accent-pressed: #29B6F6;
+  --win-accent-soft: rgba(96, 205, 255, 0.12);
+  --win-accent-border: rgba(96, 205, 255, 0.35);
+  --win-bg: #202020;
+  --win-surface: #2D2D2D;
+  --win-surface-2: #282828;
+  --win-card: #2D2D2D;
+  --win-card-hover: #333333;
+  --win-nav: rgba(32, 32, 32, 0.85);
+  --win-text: #FFFFFF;
+  --win-text-secondary: #C8C8C8;
+  --win-text-tertiary: #8A8A8A;
+  --win-border: rgba(255, 255, 255, 0.06);
+  --win-border-strong: rgba(255, 255, 255, 0.12);
+  --win-divider: rgba(255, 255, 255, 0.08);
+  --win-success: #6CCB5F;
+  --win-warning: #FCE100;
+  --win-warning-text: #FCE100;
+  --win-danger: #FF99A4;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--win-font);
+  background: var(--win-bg);
+  color: var(--win-text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"] { user-select: text; }
+.is-hidden { display: none !important; }
+button { user-select: none; }
+
+.win-app {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  grid-template-rows: 40px 1fr 28px;
+  grid-template-areas:
+    "titlebar titlebar titlebar"
+    "nav main details"
+    "statusbar statusbar statusbar";
+  height: 100vh;
+  background: var(--win-bg);
+}
+
+/* TITLE BAR */
+.win-titlebar {
+  grid-area: titlebar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 0 14px;
+  background: var(--win-surface);
+  border-bottom: 1px solid var(--win-border);
+  -webkit-app-region: drag;
+}
+.win-titlebar button, .win-titlebar input { -webkit-app-region: no-drag; }
+.win-titlebar__icon { width: 18px; height: 18px; display: grid; place-items: center; color: var(--win-accent); flex-shrink: 0; }
+.win-titlebar__title { font-size: 12px; font-weight: 600; color: var(--win-text); white-space: nowrap; }
+.win-titlebar__spacer { flex: 1; }
+.win-titlebar__actions { display: flex; align-items: center; gap: 8px; }
+.win-search {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  background: var(--win-card); border: 1px solid var(--win-border-strong);
+  border-bottom: 2px solid var(--win-text-tertiary); border-radius: var(--win-radius-sm);
+  min-width: 220px; transition: border-color 0.1s;
+}
+.win-search:focus-within { border-bottom-color: var(--win-accent); }
+.win-search__icon { width: 14px; height: 14px; color: var(--win-text-tertiary); flex-shrink: 0; }
+.win-search__input { flex: 1; border: 0; background: transparent; color: var(--win-text); font: inherit; font-size: 12px; outline: none; }
+.win-search__input::placeholder { color: var(--win-text-tertiary); }
+.win-search__kbd { font-size: 10px; color: var(--win-text-tertiary); border: 1px solid var(--win-border-strong); border-radius: 3px; padding: 1px 5px; flex-shrink: 0; }
+
+.win-lang-switch {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-sm);
+  cursor: pointer; font-size: 12px; font-weight: 600; color: var(--win-text); font-family: inherit;
+}
+.win-lang-switch:hover { background: var(--win-card-hover); }
+.win-theme-toggle, .win-icon-btn {
+  width: 30px; height: 30px; display: grid; place-items: center;
+  background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-sm);
+  cursor: pointer; color: var(--win-text); font-family: inherit;
+}
+.win-theme-toggle:hover, .win-icon-btn:hover { background: var(--win-card-hover); }
+.win-icon-btn.is-danger:hover { background: rgba(209,52,56,.12); color: var(--win-danger); border-color: rgba(209,52,56,.3); }
+.win-icon-btn.is-accent { color: var(--win-accent); border-color: var(--win-accent-border); }
+
+.win-window-controls { display: flex; margin-left: 6px; }
+.win-window-controls button { width: 42px; height: 28px; border: 0; background: transparent; color: var(--win-text); cursor: pointer; display: grid; place-items: center; }
+.win-window-controls button:hover { background: var(--win-card-hover); }
+.win-window-controls .win-close:hover { background: #E81123; color: white; }
+
+/* NAVIGATION */
+.win-nav {
+  grid-area: nav; background: var(--win-nav); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-right: 1px solid var(--win-border); display: flex; flex-direction: column; padding: 8px 4px; overflow-y: auto;
+}
+.win-nav__header { display: flex; align-items: center; gap: 12px; padding: 10px 14px 16px; }
+.win-nav__logo {
+  width: 34px; height: 34px; border-radius: var(--win-radius-md);
+  background: linear-gradient(135deg, var(--win-accent), #005A9E);
+  display: grid; place-items: center; color: white; box-shadow: 0 2px 4px rgba(0, 120, 212, 0.3);
+}
+.win-nav__brand-name { font-size: 13px; font-weight: 600; color: var(--win-text); }
+.win-nav__brand-sub { font-size: 11px; color: var(--win-text-tertiary); }
+.win-nav__section-label { font-size: 11px; font-weight: 600; color: var(--win-text-tertiary); padding: 12px 14px 6px; }
+.win-nav__item {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin: 2px 4px;
+  border-radius: var(--win-radius-sm); color: var(--win-text); font-size: 13px; cursor: pointer; border: 0;
+  background: transparent; width: calc(100% - 8px); text-align: left; font-family: inherit; position: relative;
+}
+.win-nav__item:hover { background: var(--win-card-hover); }
+.win-nav__item.is-active { background: var(--win-accent-soft); font-weight: 600; }
+.win-nav__item.is-active::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 16px; background: var(--win-accent); border-radius: 0 2px 2px 0;
+}
+.win-nav__item-icon { width: 18px; height: 18px; flex-shrink: 0; color: var(--win-text-secondary); }
+.win-nav__item.is-active .win-nav__item-icon { color: var(--win-accent); }
+.win-nav__item-badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 10px; background: var(--win-accent-soft); color: var(--win-accent); }
+.win-nav__footer { margin-top: auto; padding: 10px 8px 4px; font-size: 10px; color: var(--win-text-tertiary); text-align: center; }
+
+/* MAIN */
+.win-main { grid-area: main; background: var(--win-bg); overflow-y: auto; padding: 22px 30px; position: relative; }
+.win-view { display: none; flex-direction: column; gap: 18px; }
+.win-view.is-active { display: flex; }
+.win-page-header { margin-bottom: 2px; }
+.win-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--win-text-tertiary); margin-bottom: 4px; }
+.win-breadcrumb__sep { color: var(--win-text-tertiary); }
+.win-page-title { font-size: 26px; font-weight: 600; color: var(--win-text); margin: 0; letter-spacing: -0.01em; }
+.win-page-subtitle { font-size: 13px; color: var(--win-text-secondary); margin: 4px 0 0; }
+.win-card { background: var(--win-card); border: 1px solid var(--win-border); border-radius: var(--win-radius-lg); padding: 20px; box-shadow: var(--win-shadow-2); }
+
+/* DROP ZONE */
+.win-dropzone {
+  border: 2px dashed var(--win-border-strong); border-radius: var(--win-radius-lg); padding: 36px 24px; text-align: center;
+  background: var(--win-card); transition: all 0.15s ease; cursor: pointer; display: block;
+}
+.win-dropzone:hover, .win-dropzone.is-dragover { border-color: var(--win-accent); background: var(--win-accent-soft); }
+.win-dropzone__icon { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: var(--win-radius-md); background: var(--win-accent-soft); display: grid; place-items: center; color: var(--win-accent); }
+.win-dropzone__title { font-size: 14px; font-weight: 600; color: var(--win-text); margin: 0 0 4px; }
+.win-dropzone__hint { font-size: 12px; color: var(--win-text-secondary); margin: 0; }
+.win-dropzone__browse { color: var(--win-accent); font-weight: 600; text-decoration: underline; }
+.win-dropzone__filename { font-size: 12px; font-weight: 600; color: var(--win-accent); margin-top: 8px; word-break: break-all; }
+
+/* FORM */
+.win-field { display: flex; flex-direction: column; gap: 6px; }
+.win-field__label { font-size: 12px; font-weight: 600; color: var(--win-text); }
+.win-field__input {
+  padding: 8px 12px; background: var(--win-card); border: 1px solid var(--win-border-strong);
+  border-bottom: 2px solid var(--win-text-tertiary); border-radius: var(--win-radius-sm);
+  color: var(--win-text); font-size: 13px; font-family: inherit; transition: border-color 0.1s; width: 100%;
+}
+.win-field__input:focus { outline: none; border-bottom-color: var(--win-accent); }
+.win-field__input::placeholder { color: var(--win-text-tertiary); }
+.win-field__hint { font-size: 11px; color: var(--win-text-tertiary); }
+.win-field__hint.is-error { color: var(--win-danger); }
+.win-field__row { position: relative; display: flex; }
+.win-field__row .win-field__input { padding-right: 36px; }
+.win-field__reveal { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; background: transparent; color: var(--win-text-tertiary); cursor: pointer; display: grid; place-items: center; }
+.win-field__reveal:hover { color: var(--win-text); }
+
+.win-strength { display: flex; gap: 4px; margin-top: 4px; }
+.win-strength__bar { height: 4px; flex: 1; border-radius: 2px; background: var(--win-divider); }
+.win-strength__bar.is-on-weak { background: var(--win-danger); }
+.win-strength__bar.is-on-mid { background: var(--win-warning); }
+.win-strength__bar.is-on-strong { background: var(--win-success); }
+
+.win-security { background: var(--win-card); border: 1px solid var(--win-border); border-radius: var(--win-radius-lg); padding: 16px; }
+.win-security__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.win-security__label { font-size: 12px; font-weight: 600; color: var(--win-text); }
+.win-security__value { font-size: 11px; font-weight: 600; color: var(--win-accent); padding: 3px 8px; background: var(--win-accent-soft); border-radius: var(--win-radius-sm); border: 1px solid var(--win-accent-border); }
+.win-security__slider { width: 100%; accent-color: var(--win-accent); cursor: pointer; }
+.win-security__ticks { display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--win-text-tertiary); font-weight: 500; }
+.win-security__desc { font-size: 12px; color: var(--win-text-secondary); margin: 10px 0 0; }
+
+.win-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.win-chip { padding: 6px 14px; background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-sm); color: var(--win-text); font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.win-chip:hover { background: var(--win-card-hover); }
+.win-chip.is-active { background: var(--win-accent); border-color: var(--win-accent); color: white; font-weight: 600; }
+
+.win-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; border-radius: var(--win-radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit; min-height: 32px; white-space: nowrap; }
+.win-btn--accent { background: var(--win-accent); color: white; border-color: var(--win-accent); }
+.win-btn--accent:hover:not(:disabled) { background: var(--win-accent-hover); border-color: var(--win-accent-hover); }
+.win-btn--standard { background: var(--win-card); color: var(--win-text); border-color: var(--win-border-strong); }
+.win-btn--standard:hover:not(:disabled) { background: var(--win-card-hover); }
+.win-btn--danger { background: var(--win-card); color: var(--win-danger); border-color: rgba(209,52,56,.35); }
+.win-btn--danger:hover:not(:disabled) { background: rgba(209,52,56,.1); }
+.win-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.win-btn__icon { width: 14px; height: 14px; flex-shrink: 0; }
+.win-btn__spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; animation: spin .6s linear infinite; }
+.win-btn--standard .win-btn__spinner, .win-btn--danger .win-btn__spinner { border-color: var(--win-border-strong); border-top-color: var(--win-accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.win-actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.win-status { font-size: 12px; color: var(--win-text-secondary); padding: 10px 14px; background: var(--win-card); border: 1px solid var(--win-border); border-radius: var(--win-radius-md); display: flex; align-items: center; gap: 8px; }
+.win-status.is-success { color: var(--win-success); border-color: rgba(16, 124, 16, 0.2); background: rgba(16, 124, 16, 0.06); }
+.win-status.is-error { color: var(--win-danger); border-color: rgba(209, 52, 56, 0.2); background: rgba(209, 52, 56, 0.06); }
+.win-infobar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--win-accent-soft); border: 1px solid var(--win-accent-border); border-left: 3px solid var(--win-accent); border-radius: var(--win-radius-sm); font-size: 12px; color: var(--win-text); }
+.win-infobar__icon { color: var(--win-accent); flex-shrink: 0; }
+
+/* PROGRESS */
+.win-progress { height: 6px; border-radius: 4px; background: var(--win-divider); overflow: hidden; }
+.win-progress__bar { height: 100%; width: 0%; background: var(--win-accent); transition: width .2s ease; }
+
+/* STATUS BAR */
+.win-statusbar { grid-area: statusbar; display: flex; align-items: center; gap: 16px; padding: 0 14px; background: var(--win-surface); border-top: 1px solid var(--win-border); font-size: 11px; color: var(--win-text-secondary); }
+.win-statusbar__item { display: flex; align-items: center; gap: 6px; }
+.win-statusbar__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--win-success); }
+.win-statusbar__dot.is-busy { background: var(--win-warning); animation: pulse 1.5s infinite; }
+.win-statusbar__dot.is-error { background: var(--win-danger); }
+.win-statusbar__spacer { flex: 1; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* DETAILS PANEL */
+.win-details { grid-area: details; background: var(--win-surface); border-left: 1px solid var(--win-border); overflow-y: auto; display: flex; flex-direction: column; }
+.win-details__tabs { display: flex; border-bottom: 1px solid var(--win-border); padding: 0 8px; background: var(--win-surface-2); }
+.win-details__tab { padding: 12px 14px; font-size: 12px; font-weight: 600; color: var(--win-text-secondary); cursor: pointer; border: 0; background: none; border-bottom: 2px solid transparent; font-family: inherit; position: relative; }
+.win-details__tab:hover { color: var(--win-text); }
+.win-details__tab.is-active { color: var(--win-text); }
+.win-details__tab.is-active::after { content: ''; position: absolute; bottom: -1px; left: 14px; right: 14px; height: 3px; background: var(--win-accent); border-radius: 2px 2px 0 0; }
+.win-details__content { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.win-details__panel { display: none; flex-direction: column; gap: 14px; }
+.win-details__panel.is-active { display: flex; }
+.win-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px 20px; color: var(--win-text-tertiary); flex: 1; }
+.win-empty__icon { width: 44px; height: 44px; margin-bottom: 12px; opacity: 0.5; }
+.win-empty__title { font-size: 13px; font-weight: 600; color: var(--win-text-secondary); margin: 0 0 4px; }
+.win-empty__text { font-size: 12px; margin: 0; }
+
+.win-file-card { background: var(--win-card); border: 1px solid var(--win-border); border-radius: var(--win-radius-md); padding: 14px; }
+.win-file-card__header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.win-file-card__icon { width: 36px; height: 36px; border-radius: var(--win-radius-md); background: var(--win-accent-soft); display: grid; place-items: center; color: var(--win-accent); flex-shrink: 0; }
+.win-file-card__name { font-size: 13px; font-weight: 600; color: var(--win-text); word-break: break-word; margin: 0; }
+.win-file-card__meta { font-size: 11px; color: var(--win-text-tertiary); margin: 2px 0 0; }
+.win-file-card__rows { display: grid; }
+.win-file-card__row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; padding: 8px 0; border-bottom: 1px solid var(--win-divider); }
+.win-file-card__row:last-child { border-bottom: none; }
+.win-file-card__row-label { color: var(--win-text-secondary); font-weight: 500; }
+.win-file-card__row-value { color: var(--win-text); font-weight: 600; text-align: right; word-break: break-word; }
+
+.win-pdf-card { background: linear-gradient(135deg, var(--win-accent-soft), rgba(91, 46, 255, 0.04)); border: 1px solid var(--win-accent-border); border-radius: var(--win-radius-md); padding: 14px; }
+.win-pdf-card.is-ready { border-color: var(--win-accent); }
+.win-pdf-card__badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; background: var(--win-accent-soft); color: var(--win-accent); border: 1px solid var(--win-accent-border); border-radius: var(--win-radius-sm); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+.win-pdf-card__title { font-size: 13px; font-weight: 600; color: var(--win-text); margin: 0 0 4px; }
+.win-pdf-card__text { font-size: 12px; color: var(--win-text-secondary); margin: 0 0 12px; }
+.win-share-link { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--win-surface-2); border: 1px solid var(--win-border); border-radius: var(--win-radius-sm); font-size: 11px; color: var(--win-accent); word-break: break-all; font-family: 'Consolas', monospace; }
+
+.win-activity-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--win-divider); font-size: 12px; color: var(--win-text-secondary); }
+.win-activity-item:last-child { border-bottom: none; }
+.win-activity-item__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--win-accent); margin-top: 6px; flex-shrink: 0; }
+
+/* FILE MANAGER */
+.win-fm-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.win-fm-toolbar-left { display: flex; gap: 8px; flex: 1; min-width: 220px; }
+.win-fm-search { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-sm); flex: 1; max-width: 320px; }
+.win-fm-search input { border: 0; background: transparent; outline: none; font: inherit; font-size: 13px; color: var(--win-text); flex: 1; }
+.win-fm-search svg { width: 14px; height: 14px; color: var(--win-text-tertiary); flex-shrink: 0; }
+.win-fm-sort { padding: 7px 10px; background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-sm); font-size: 12px; color: var(--win-text); font-family: inherit; }
+.win-fm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.win-fm-card { background: var(--win-card); border: 1px solid var(--win-border); border-radius: var(--win-radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--win-shadow-2); transition: border-color .1s; }
+.win-fm-card:hover { border-color: var(--win-border-strong); }
+.win-fm-card__top { display: flex; gap: 10px; align-items: flex-start; }
+.win-fm-card__icon { width: 38px; height: 38px; border-radius: var(--win-radius-md); background: var(--win-accent-soft); display: grid; place-items: center; color: var(--win-accent); flex-shrink: 0; }
+.win-fm-card__body { flex: 1; min-width: 0; }
+.win-fm-card__name { font-weight: 600; font-size: 13px; word-break: break-word; margin: 0; cursor: text; border-radius: 4px; padding: 1px 3px; margin-left: -3px; }
+.win-fm-card__name[contenteditable="true"] { outline: 2px solid var(--win-accent); background: var(--win-accent-soft); }
+.win-fm-card__meta { font-size: 11px; color: var(--win-text-tertiary); margin: 3px 0 0; }
+.win-fm-card__badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.win-fm-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: var(--win-accent-soft); color: var(--win-accent); border: 1px solid var(--win-accent-border); white-space: nowrap; }
+.win-fm-badge.is-danger { background: rgba(209,52,56,0.1); color: var(--win-danger); border-color: rgba(209,52,56,0.3); }
+.win-fm-badge.is-warning { background: rgba(255,185,0,0.15); color: var(--win-warning-text); border-color: rgba(255,185,0,.4); }
+.win-fm-card__actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.win-fm-menu-btn { margin-left: auto; }
+
+/* MODALS */
+.win-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.win-modal { background: var(--win-card); border-radius: var(--win-radius-lg); padding: 20px; width: 380px; max-width: 90vw; box-shadow: var(--win-shadow-3); border: 1px solid var(--win-border); }
+.win-modal__title { font-size: 15px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+.win-modal__text { font-size: 12px; color: var(--win-text-secondary); margin: 0 0 14px; line-height: 1.5; }
+.win-modal__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.win-modal .win-field { margin-bottom: 4px; }
+
+/* CONTEXT MENU */
+.win-ctxmenu { position: fixed; min-width: 190px; background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-md); box-shadow: var(--win-shadow-3); padding: 4px; z-index: 1100; display: none; }
+.win-ctxmenu.is-open { display: block; }
+.win-ctxmenu__item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--win-radius-sm); font-size: 12px; cursor: pointer; color: var(--win-text); }
+.win-ctxmenu__item svg { width: 14px; height: 14px; flex-shrink: 0; }
+.win-ctxmenu__item:hover { background: var(--win-card-hover); }
+.win-ctxmenu__item.is-danger { color: var(--win-danger); }
+.win-ctxmenu__sep { height: 1px; background: var(--win-divider); margin: 4px 2px; }
+
+/* TOASTS */
+.win-toasts { position: fixed; bottom: 40px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 1300; align-items: flex-end; }
+.win-toast { background: var(--win-card); border: 1px solid var(--win-border-strong); border-radius: var(--win-radius-md); padding: 10px 14px; font-size: 12px; box-shadow: var(--win-shadow-3); display: flex; align-items: center; gap: 8px; min-width: 220px; max-width: 320px; animation: toastIn .15s ease; }
+.win-toast.is-success { border-color: rgba(16,124,16,.35); }
+.win-toast.is-error { border-color: rgba(209,52,56,.35); }
+.win-toast__icon { flex-shrink: 0; }
+.win-toast.is-success .win-toast__icon { color: var(--win-success); }
+.win-toast.is-error .win-toast__icon { color: var(--win-danger); }
+.win-toast.is-info .win-toast__icon { color: var(--win-accent); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* DRAG OVERLAY */
+.win-drag-overlay { position: fixed; inset: 0; background: var(--win-accent-soft); border: 3px dashed var(--win-accent); z-index: 900; display: none; align-items: center; justify-content: center; }
+.win-drag-overlay.is-active { display: flex; }
+.win-drag-overlay__box { text-align: center; color: var(--win-accent); font-weight: 700; font-size: 16px; }
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--win-border-strong); border-radius: 6px; border: 3px solid var(--win-bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--win-text-tertiary); }
+
+@media (max-width: 1200px) {
+  .win-app { grid-template-columns: 230px 1fr; grid-template-areas: "titlebar titlebar" "nav main" "statusbar statusbar"; }
+  .win-details { display: none; }
+}
+@media (max-width: 800px) {
+  .win-app { grid-template-columns: 1fr; grid-template-areas: "titlebar" "main" "statusbar"; }
+  .win-nav { display: none; }
+  .win-main { padding: 16px; }
+  .win-page-title { font-size: 22px; }
+  .win-search { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="win-app">
+
+  <!-- TITLE BAR -->
+  <div class="win-titlebar">
+    <div class="win-titlebar__icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+    </div>
+    <div class="win-titlebar__title" data-i18n="app.title">Secure Vault Desktop</div>
+    <div class="win-titlebar__spacer"></div>
+    <div class="win-titlebar__actions">
+      <div class="win-search">
+        <svg class="win-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" id="globalSearch" class="win-search__input" data-i18n-placeholder="search.placeholder" placeholder="Cerca nel file manager..." />
+        <span class="win-search__kbd">Ctrl+F</span>
+      </div>
+      <button class="win-lang-switch" id="langSwitch" type="button">
+        <span id="langFlag">🇮🇹</span>
+        <span id="langLabel">IT</span>
+      </button>
+      <button class="win-theme-toggle" id="themeToggle" type="button" title="Tema">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+      </button>
+      <div class="win-window-controls">
+        <button id="winMinimize" title="Minimize" type="button"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 5h10" stroke="currentColor" stroke-width="1"/></svg></button>
+        <button id="winMaximize" title="Maximize" type="button"><svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+        <button class="win-close" id="winClose" title="Close" type="button"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M0 0l10 10M10 0l-10 10" stroke="currentColor" stroke-width="1"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAVIGATION -->
+  <nav class="win-nav">
+    <div class="win-nav__header">
+      <div class="win-nav__logo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div>
+        <div class="win-nav__brand-name" data-i18n="app.name">Secure Vault</div>
+        <div class="win-nav__brand-sub" data-i18n="app.version">Desktop · v2.0</div>
+      </div>
+    </div>
+
+    <div class="win-nav__section-label" data-i18n="nav.workspace">Workspace</div>
+    <button class="win-nav__item is-active" data-view="create" type="button">
+      <svg class="win-nav__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-i18n="nav.create">Crea vault</span>
+    </button>
+    <button class="win-nav__item" data-view="open" type="button">
+      <svg class="win-nav__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <span data-i18n="nav.open">Apri vault</span>
+    </button>
+    <button class="win-nav__item" data-view="filemanager" type="button">
+      <svg class="win-nav__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+      <span data-i18n="nav.filemanager">File manager</span>
+      <span class="win-nav__item-badge" id="fmCount">0</span>
+    </button>
+
+    <div class="win-nav__section-label" data-i18n="nav.tools">Strumenti</div>
+    <button class="win-nav__item" data-view="pdf" type="button">
+      <svg class="win-nav__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      <span data-i18n="nav.pdf">PDF Recap</span>
+    </button>
+    <button class="win-nav__item" data-view="activity" type="button">
+      <svg class="win-nav__item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span data-i18n="nav.activity">Attività</span>
+    </button>
+
+    <div class="win-nav__footer" data-i18n="nav.footer">Cifratura locale. Nessun server.</div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="win-main">
+
+    <!-- VIEW: CREATE -->
+    <section class="win-view is-active" data-view="create">
+      <div class="win-page-header">
+        <div class="win-breadcrumb">
+          <span data-i18n="nav.workspace">Workspace</span>
+          <span class="win-breadcrumb__sep">›</span>
+          <span data-i18n="nav.create">Crea vault</span>
+        </div>
+        <h1 class="win-page-title" data-i18n="create.title">Crea un vault</h1>
+        <p class="win-page-subtitle" data-i18n="create.subtitle">Seleziona un file, imposta una password e genera il vault cifrato.</p>
+      </div>
+
+      <div class="win-infobar">
+        <svg class="win-infobar__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+        </svg>
+        <span data-i18n="create.info">La crittografia avviene interamente in locale. Nessun file viene caricato su server esterni.</span>
+      </div>
+
+      <label class="win-dropzone" id="dropzone">
+        <input type="file" id="fileInput" hidden />
+        <div class="win-dropzone__icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+        </div>
+        <p class="win-dropzone__title" data-i18n="create.dropTitle">Trascina qui il file da proteggere</p>
+        <p class="win-dropzone__hint">
+          <span data-i18n="create.dropHint">oppure</span>
+          <span class="win-dropzone__browse" data-i18n="create.dropBrowse">sfoglia dal computer</span>
+        </p>
+        <p class="win-dropzone__filename is-hidden" id="createFileName"></p>
+      </label>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="win-field">
+          <label class="win-field__label" data-i18n="create.password">Password</label>
+          <div class="win-field__row">
+            <input type="password" id="password" class="win-field__input" data-i18n-placeholder="create.passwordPlaceholder" placeholder="Scegli una password forte" autocomplete="new-password" />
+            <button class="win-field__reveal" type="button" data-toggle-for="password" title="Mostra/nascondi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="win-strength" id="passwordStrength">
+            <div class="win-strength__bar"></div><div class="win-strength__bar"></div><div class="win-strength__bar"></div><div class="win-strength__bar"></div>
+          </div>
+        </div>
+        <div class="win-field">
+          <label class="win-field__label" data-i18n="create.confirm">Conferma password</label>
+          <div class="win-field__row">
+            <input type="password" id="confirmPassword" class="win-field__input" data-i18n-placeholder="create.confirmPlaceholder" placeholder="Ripeti la password" autocomplete="new-password" />
+            <button class="win-field__reveal" type="button" data-toggle-for="confirmPassword" title="Mostra/nascondi">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="win-field__hint" id="passwordMatchHint"></div>
+        </div>
+      </div>
+
+      <div class="win-security">
+        <div class="win-security__header">
+          <span class="win-security__label" data-i18n="create.security">Livello di sicurezza</span>
+          <span class="win-security__value" id="securityLevelLabel">AES-256-GCM</span>
+        </div>
+        <input type="range" id="securityLevel" class="win-security__slider" min="0" max="2" step="1" value="2" />
+        <div class="win-security__ticks">
+          <span>AES-128</span>
+          <span>AES-192</span>
+          <span>AES-256</span>
+        </div>
+        <p class="win-security__desc" id="securityLevelDescription" data-i18n="create.securityDesc">
+          AES-256-GCM offre la massima protezione ed è consigliato per file importanti.
+        </p>
+      </div>
+
+      <div class="win-field">
+        <label class="win-field__label" data-i18n="create.expiry">Scadenza (max 1 giorno)</label>
+        <input type="datetime-local" id="expiresAt" class="win-field__input" />
+        <div class="win-field__hint" data-i18n="create.expiryHint">Lascia vuoto per nessuna scadenza. Il valore massimo consentito è 24 ore da ora.</div>
+      </div>
+
+      <div class="win-field">
+        <label class="win-field__label" data-i18n="create.maxOpens">Numero massimo di aperture</label>
+        <div class="win-chips" id="maxOpenSelector">
+          <button class="win-chip max-open-option is-active" data-value="0" type="button" data-i18n="create.unlimited">Illimitate</button>
+          <button class="win-chip max-open-option" data-value="1" type="button">1</button>
+          <button class="win-chip max-open-option" data-value="3" type="button">3</button>
+          <button class="win-chip max-open-option" data-value="5" type="button">5</button>
+          <button class="win-chip max-open-option" data-value="10" type="button">10</button>
+        </div>
+      </div>
+
+      <div class="win-field">
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer;">
+          <input type="checkbox" id="saveToFileManager" checked style="accent-color:var(--win-accent); width:15px; height:15px;" />
+          <span data-i18n="create.saveToFm">Salva questo vault nel file manager locale</span>
+        </label>
+      </div>
+
+      <div class="win-progress is-hidden" id="createProgress"><div class="win-progress__bar" id="createProgressBar"></div></div>
+
+      <div class="win-actions-row">
+        <button class="win-btn win-btn--accent" id="createVaultBtn" type="button">
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          <span data-i18n="create.button">Crea vault</span>
+        </button>
+        <button class="win-btn win-btn--standard" id="downloadVaultBtn" type="button" disabled>
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span data-i18n="create.download">Scarica .vault</span>
+        </button>
+        <button class="win-btn win-btn--standard" id="downloadRecapPdfBtn" type="button" disabled>
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span data-i18n="create.pdfRecap">PDF Recap</span>
+        </button>
+      </div>
+
+      <div class="win-status" id="createStatus" data-i18n="create.ready">Pronto a creare un vault.</div>
+    </section>
+
+    <!-- VIEW: OPEN -->
+    <section class="win-view" data-view="open">
+      <div class="win-page-header">
+        <div class="win-breadcrumb">
+          <span data-i18n="nav.workspace">Workspace</span>
+          <span class="win-breadcrumb__sep">›</span>
+          <span data-i18n="nav.open">Apri vault</span>
+        </div>
+        <h1 class="win-page-title" data-i18n="open.title">Apri un vault</h1>
+        <p class="win-page-subtitle" data-i18n="open.subtitle">Carica il file .vault e inserisci la password per recuperare il contenuto.</p>
+      </div>
+
+      <label class="win-dropzone" id="dropzoneOpen">
+        <input type="file" id="vaultInput" hidden accept=".vault" />
+        <div class="win-dropzone__icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+        </div>
+        <p class="win-dropzone__title" data-i18n="open.dropTitle">Trascina qui il file .vault</p>
+        <p class="win-dropzone__hint">
+          <span data-i18n="create.dropHint">oppure</span>
+          <span class="win-dropzone__browse" data-i18n="create.dropBrowse">sfoglia dal computer</span>
+        </p>
+        <p class="win-dropzone__filename is-hidden" id="openFileName"></p>
+      </label>
+
+      <div class="win-field">
+        <label class="win-field__label" data-i18n="open.password">Password</label>
+        <div class="win-field__row">
+          <input type="password" id="unlockPassword" class="win-field__input" data-i18n-placeholder="open.passwordPlaceholder" placeholder="Inserisci la password" autocomplete="current-password" />
+          <button class="win-field__reveal" type="button" data-toggle-for="unlockPassword" title="Mostra/nascondi">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="win-field">
+        <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; cursor:pointer;">
+          <input type="checkbox" id="openSaveToFileManager" checked style="accent-color:var(--win-accent); width:15px; height:15px;" />
+          <span data-i18n="open.saveToFm">Salva questo vault nel file manager dopo l'apertura</span>
+        </label>
+      </div>
+
+      <div class="win-progress is-hidden" id="openProgress"><div class="win-progress__bar" id="openProgressBar"></div></div>
+
+      <div class="win-actions-row">
+        <button class="win-btn win-btn--accent" id="openVaultBtn" type="button">
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span data-i18n="open.button">Apri vault</span>
+        </button>
+        <button class="win-btn win-btn--standard" id="downloadOpenBtn" type="button" disabled>
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          <span data-i18n="open.download">Scarica contenuto</span>
+        </button>
+      </div>
+
+      <div class="win-status" id="openStatus" data-i18n="open.ready">Pronto ad aprire un vault.</div>
+
+      <div id="openPreview" class="win-card" style="min-height:80px; font-size:12px; color:var(--win-text-secondary);">
+        <span data-i18n="open.previewEmpty">Nessun file aperto ancora.</span>
+      </div>
+    </section>
+
+    <!-- VIEW: FILE MANAGER -->
+    <section class="win-view" data-view="filemanager">
+      <div class="win-page-header">
+        <div class="win-breadcrumb">
+          <span data-i18n="nav.workspace">Workspace</span>
+          <span class="win-breadcrumb__sep">›</span>
+          <span data-i18n="nav.filemanager">File manager</span>
+        </div>
+        <h1 class="win-page-title" data-i18n="fm.title">File manager</h1>
+        <p class="win-page-subtitle" data-i18n="fm.subtitle">I vault salvati su questo dispositivo. Apri, rinomina, esporta o elimina senza dover ritrovare il file .vault.</p>
+      </div>
+
+      <div class="win-fm-toolbar">
+        <div class="win-fm-toolbar-left">
+          <div class="win-fm-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" id="fmSearch" data-i18n-placeholder="fm.searchPlaceholder" placeholder="Cerca per nome..." />
+          </div>
+          <select id="fmSort" class="win-fm-sort">
+            <option value="date-desc" data-i18n="fm.sortNewest">Più recenti</option>
+            <option value="date-asc" data-i18n="fm.sortOldest">Più vecchi</option>
+            <option value="name-asc" data-i18n="fm.sortNameAsc">Nome A-Z</option>
+            <option value="name-desc" data-i18n="fm.sortNameDesc">Nome Z-A</option>
+            <option value="size-desc" data-i18n="fm.sortSizeDesc">Dimensione ↓</option>
+            <option value="size-asc" data-i18n="fm.sortSizeAsc">Dimensione ↑</option>
+          </select>
+        </div>
+        <div class="win-actions-row">
+          <button class="win-btn win-btn--standard" id="fmImportBtn" type="button">
+            <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <span data-i18n="fm.import">Importa .vault</span>
+          </button>
+          <input type="file" id="fmImportInput" accept=".vault" hidden multiple />
+          <button class="win-btn win-btn--danger" id="fmClearBtn" type="button">
+            <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+            <span data-i18n="fm.clearAll">Svuota tutto</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="fmEmpty" class="win-empty">
+        <svg class="win-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+        <p class="win-empty__title" data-i18n="fm.emptyTitle">Nessun vault salvato</p>
+        <p class="win-empty__text" data-i18n="fm.emptyText">Crea un nuovo vault oppure importa un file .vault esistente.</p>
+      </div>
+
+      <div id="fmGrid" class="win-fm-grid"></div>
+    </section>
+
+    <!-- VIEW: PDF -->
+    <section class="win-view" data-view="pdf">
+      <div class="win-page-header">
+        <div class="win-breadcrumb">
+          <span data-i18n="nav.tools">Strumenti</span>
+          <span class="win-breadcrumb__sep">›</span>
+          <span data-i18n="nav.pdf">PDF Recap</span>
+        </div>
+        <h1 class="win-page-title" data-i18n="pdf.title">PDF Recap</h1>
+        <p class="win-page-subtitle" data-i18n="pdf.subtitle">Genera un PDF con password, link e regole di apertura del vault.</p>
+      </div>
+
+      <div class="win-field">
+        <label class="win-field__label" data-i18n="pdf.language">Lingua PDF</label>
+        <select id="pdfLanguage" class="win-field__input">
+          <option value="it">Italiano</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+
+      <div id="pdfRecapCard" class="win-pdf-card">
+        <div class="win-pdf-card__badge" data-i18n="pdf.badge">📄 PDF protetto</div>
+        <h3 class="win-pdf-card__title" id="pdfRecapFile" data-i18n="pdf.emptyTitle">Recap pronto dopo la creazione</h3>
+        <p class="win-pdf-card__text" id="pdfRecapDetails" data-i18n="pdf.emptyText">Crea un vault per generare un PDF con password, link e regole di apertura.</p>
+      </div>
+
+      <div class="win-actions-row">
+        <button class="win-btn win-btn--accent" id="downloadRecapPdfBtn2" type="button" disabled>
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span data-i18n="create.pdfRecap">PDF Recap</span>
+        </button>
+      </div>
+
+      <a id="shareLink" href="#" class="win-share-link is-hidden" target="_blank" rel="noopener">—</a>
+    </section>
+
+    <!-- VIEW: ACTIVITY -->
+    <section class="win-view" data-view="activity">
+      <div class="win-page-header">
+        <div class="win-breadcrumb">
+          <span data-i18n="nav.tools">Strumenti</span>
+          <span class="win-breadcrumb__sep">›</span>
+          <span data-i18n="nav.activity">Attività</span>
+        </div>
+        <h1 class="win-page-title" data-i18n="activity.title">Log attività</h1>
+        <p class="win-page-subtitle" data-i18n="activity.subtitle">Storico delle ultime azioni eseguite.</p>
+      </div>
+      <div class="win-card">
+        <div id="activityLogDesktop" style="display:grid; gap:4px;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- DETAILS PANEL -->
+  <aside class="win-details">
+    <div class="win-details__tabs">
+      <button class="win-details__tab is-active" data-panel="preview" type="button" data-i18n="details.preview">Anteprima</button>
+      <button class="win-details__tab" data-panel="details" type="button" data-i18n="details.details">Dettagli</button>
+      <button class="win-details__tab" data-panel="share" type="button" data-i18n="details.share">Condividi</button>
+    </div>
+    <div class="win-details__content">
+
+      <div class="win-details__panel is-active" data-panel="preview">
+        <div id="vaultPreview" class="win-empty">
+          <svg class="win-empty__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <p class="win-empty__title" data-i18n="details.noVault">Nessun vault creato</p>
+          <p class="win-empty__text" data-i18n="details.noVaultText">L'anteprima del vault apparirà qui dopo la creazione.</p>
+        </div>
+      </div>
+
+      <div class="win-details__panel" data-panel="details">
+        <div class="win-file-card">
+          <div class="win-file-card__header">
+            <div class="win-file-card__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>
+              </svg>
+            </div>
+            <div>
+              <p class="win-file-card__name" id="detailFileName">—</p>
+              <p class="win-file-card__meta" id="detailFileType" data-i18n="details.waitingFile">In attesa di un file</p>
+            </div>
+          </div>
+          <div class="win-file-card__rows">
+            <div class="win-file-card__row">
+              <span class="win-file-card__row-label" data-i18n="details.size">Dimensione</span>
+              <span class="win-file-card__row-value" id="detailSize">—</span>
+            </div>
+            <div class="win-file-card__row">
+              <span class="win-file-card__row-label" data-i18n="details.security">Sicurezza</span>
+              <span class="win-file-card__row-value" id="detailSecurity">AES-256-GCM</span>
+            </div>
+            <div class="win-file-card__row">
+              <span class="win-file-card__row-label" data-i18n="details.expiry">Scadenza</span>
+              <span class="win-file-card__row-value" id="detailExpiry" data-i18n="details.none">Nessuna</span>
+            </div>
+            <div class="win-file-card__row">
+              <span class="win-file-card__row-label" data-i18n="details.opens">Aperture</span>
+              <span class="win-file-card__row-value" id="detailOpens" data-i18n="create.unlimited">Illimitate</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="win-details__panel" data-panel="share">
+        <div class="win-pdf-card" id="sharePdfCard">
+          <div class="win-pdf-card__badge" data-i18n="details.shareBadge">🔗 Link condivisione</div>
+          <h3 class="win-pdf-card__title" id="shareTitle" data-i18n="details.shareTitle">Link pronto dopo la creazione</h3>
+          <p class="win-pdf-card__text" id="shareText" data-i18n="details.shareText">Crea un vault per generare un link condivisibile.</p>
+        </div>
+        <div class="win-share-link is-hidden" id="shareLinkAside"></div>
+        <button class="win-btn win-btn--standard is-hidden" id="copyShareLinkBtn" type="button">
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          <span data-i18n="details.copyLink">Copia link</span>
+        </button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- STATUS BAR -->
+  <div class="win-statusbar">
+    <div class="win-statusbar__item">
+      <div class="win-statusbar__dot" id="statusDot"></div>
+      <span id="statusText" data-i18n="status.ready">Pronto</span>
+    </div>
+    <div class="win-statusbar__spacer"></div>
+    <div class="win-statusbar__item">
+      <span data-i18n="status.filecount">File salvati:</span>
+      <strong id="statusFileCount">0</strong>
+    </div>
+    <div class="win-statusbar__item">
+      <span data-i18n="status.encryption">Crittografia:</span>
+      <strong id="statusEncryption">AES-256-GCM</strong>
+    </div>
+    <div class="win-statusbar__item">
+      <span>🔒</span>
+      <span data-i18n="status.secure">Tutto locale</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL ROOT -->
+<div id="modalRoot"></div>
+<!-- CONTEXT MENU ROOT -->
+<div id="ctxMenuRoot"></div>
+<!-- TOASTS -->
+<div class="win-toasts" id="toastRoot"></div>
+<!-- DRAG OVERLAY -->
+<div class="win-drag-overlay" id="dragOverlay">
+  <div class="win-drag-overlay__box">
+    <div data-i18n="drag.dropHere">Rilascia qui il file</div>
+  </div>
+</div>
+
+<script>
+/* ============================================
+   TRANSLATIONS
+   ============================================ */
+const translations = {
+  it: {
+    'app.title': 'Secure Vault Desktop',
+    'app.name': 'Secure Vault',
+    'app.version': 'Desktop · v2.0',
+    'search.placeholder': 'Cerca nel file manager...',
+    'nav.workspace': 'Workspace',
+    'nav.create': 'Crea vault',
+    'nav.open': 'Apri vault',
+    'nav.filemanager': 'File manager',
+    'nav.tools': 'Strumenti',
+    'nav.pdf': 'PDF Recap',
+    'nav.activity': 'Attività',
+    'nav.footer': 'Cifratura locale. Nessun server.',
+    'create.title': 'Crea un vault',
+    'create.subtitle': 'Seleziona un file, imposta una password e genera il vault cifrato.',
+    'create.info': 'La crittografia avviene interamente in locale. Nessun file viene caricato su server esterni.',
+    'create.dropTitle': 'Trascina qui il file da proteggere',
+    'create.dropHint': 'oppure',
+    'create.dropBrowse': 'sfoglia dal computer',
+    'create.password': 'Password',
+    'create.passwordPlaceholder': 'Scegli una password forte',
+    'create.confirm': 'Conferma password',
+    'create.confirmPlaceholder': 'Ripeti la password',
+    'create.security': 'Livello di sicurezza',
+    'create.securityDesc': 'AES-256-GCM offre la massima protezione ed è consigliato per file importanti.',
+    'create.securityDesc128': 'AES-128-GCM è più rapido, adatto a file non critici.',
+    'create.securityDesc192': 'AES-192-GCM è un buon compromesso tra velocità e sicurezza.',
+    'create.expiry': 'Scadenza (max 1 giorno)',
+    'create.expiryHint': 'Lascia vuoto per nessuna scadenza. Il valore massimo consentito è 24 ore da ora.',
+    'create.maxOpens': 'Numero massimo di aperture',
+    'create.unlimited': 'Illimitate',
+    'create.button': 'Crea vault',
+    'create.download': 'Scarica .vault',
+    'create.pdfRecap': 'PDF Recap',
+    'create.saveToFm': 'Salva questo vault nel file manager locale',
+    'create.ready': 'Pronto a creare un vault.',
+    'create.success': 'Vault creato con successo.',
+    'create.encrypting': 'Crittografia in corso...',
+    'create.errorFile': 'Seleziona prima un file.',
+    'create.errorPassword': 'La password deve essere inserita e coincidere.',
+    'create.errorPasswordShort': 'Usa una password di almeno 6 caratteri.',
+    'create.expiryClamped': 'La scadenza superava 24 ore ed è stata riportata al massimo consentito.',
+    'open.title': 'Apri un vault',
+    'open.subtitle': 'Carica il file .vault e inserisci la password per recuperare il contenuto.',
+    'open.dropTitle': 'Trascina qui il file .vault',
+    'open.password': 'Password',
+    'open.passwordPlaceholder': 'Inserisci la password',
+    'open.button': 'Apri vault',
+    'open.download': 'Scarica contenuto',
+    'open.saveToFm': "Salva questo vault nel file manager dopo l'apertura",
+    'open.ready': 'Pronto ad aprire un vault.',
+    'open.previewEmpty': 'Nessun file aperto ancora.',
+    'open.success': 'Vault aperto correttamente.',
+    'open.decrypting': 'Decrittazione in corso...',
+    'open.errorFile': 'Seleziona prima un file vault.',
+    'open.errorPassword': 'Inserisci la password.',
+    'open.errorWrongPassword': 'Password errata o file corrotto.',
+    'open.binary': 'Contenuto binario. Scarica il file recuperato.',
+    'fm.title': 'File manager',
+    'fm.subtitle': 'I vault salvati su questo dispositivo. Apri, rinomina, esporta o elimina senza dover ritrovare il file .vault.',
+    'fm.searchPlaceholder': 'Cerca per nome...',
+    'fm.sortNewest': 'Più recenti',
+    'fm.sortOldest': 'Più vecchi',
+    'fm.sortNameAsc': 'Nome A-Z',
+    'fm.sortNameDesc': 'Nome Z-A',
+    'fm.sortSizeDesc': 'Dimensione ↓',
+    'fm.sortSizeAsc': 'Dimensione ↑',
+    'fm.import': 'Importa .vault',
+    'fm.clearAll': 'Svuota tutto',
+    'fm.emptyTitle': 'Nessun vault salvato',
+    'fm.emptyText': 'Crea un nuovo vault oppure importa un file .vault esistente.',
+    'fm.noResults': 'Nessun risultato per la ricerca corrente.',
+    'fm.open': 'Apri',
+    'fm.download': 'Scarica',
+    'fm.rename': 'Rinomina',
+    'fm.delete': 'Elimina',
+    'fm.copyLink': 'Copia link',
+    'fm.expired': 'Scaduto',
+    'fm.opensExhausted': 'Aperture esaurite',
+    'fm.opensLeft': '{n} aperture rimaste',
+    'fm.importSuccess': '{n} vault importati nel file manager.',
+    'fm.importError': 'Uno o più file non sono vault validi.',
+    'fm.deleteConfirmTitle': 'Eliminare questo vault?',
+    'fm.deleteConfirmText': "Il file cifrato verrà rimosso dal file manager locale. L'azione non è reversibile.",
+    'fm.clearConfirmTitle': 'Svuotare il file manager?',
+    'fm.clearConfirmText': 'Tutti i vault salvati su questo dispositivo verranno eliminati definitivamente.',
+    'fm.renameTitle': 'Rinomina vault',
+    'fm.renameLabel': 'Nuovo nome',
+    'fm.deleted': 'Vault eliminato.',
+    'fm.cleared': 'File manager svuotato.',
+    'fm.renamed': 'Vault rinominato.',
+    'fm.linkCopied': 'Link copiato negli appunti.',
+    'fm.notFoundShared': 'Il vault condiviso non è presente su questo dispositivo.',
+    'pdf.title': 'PDF Recap',
+    'pdf.subtitle': 'Genera un PDF con password, link e regole di apertura del vault.',
+    'pdf.language': 'Lingua PDF',
+    'pdf.badge': '📄 PDF protetto',
+    'pdf.emptyTitle': 'Recap pronto dopo la creazione',
+    'pdf.emptyText': 'Crea un vault per generare un PDF con password, link e regole di apertura.',
+    'details.preview': 'Anteprima',
+    'details.details': 'Dettagli',
+    'details.share': 'Condividi',
+    'details.noVault': 'Nessun vault creato',
+    'details.noVaultText': "L'anteprima del vault apparirà qui dopo la creazione.",
+    'details.waitingFile': 'In attesa di un file',
+    'details.size': 'Dimensione',
+    'details.security': 'Sicurezza',
+    'details.expiry': 'Scadenza',
+    'details.opens': 'Aperture',
+    'details.none': 'Nessuna',
+    'details.shareBadge': '🔗 Link condivisione',
+    'details.shareTitle': 'Link pronto dopo la creazione',
+    'details.shareText': 'Crea un vault per generare un link condivisibile.',
+    'details.copyLink': 'Copia link',
+    'activity.title': 'Log attività',
+    'activity.subtitle': 'Storico delle ultime azioni eseguite.',
+    'activity.empty': 'Nessuna attività ancora.',
+    'activity.created': 'Creato vault per {file}',
+    'activity.opened': 'Aperto vault {file}',
+    'activity.imported': 'Importato vault {file}',
+    'activity.deleted': 'Eliminato vault {file}',
+    'activity.renamed': 'Rinominato {old} in {new}',
+    'status.ready': 'Pronto',
+    'status.busy': 'In elaborazione...',
+    'status.done': 'Completato',
+    'status.error': 'Errore',
+    'status.encryption': 'Crittografia:',
+    'status.secure': 'Tutto locale',
+    'status.filecount': 'File salvati:',
+    'error.expired': 'Questo vault è scaduto.',
+    'error.maxOpens': 'Questo vault ha raggiunto il numero massimo di aperture.',
+    'error.invalid': 'Questo file non è un vault supportato.',
+    'window.closeConfirmTitle': "Chiudere l'applicazione?",
+    'window.closeConfirmText': 'Le operazioni in corso verranno interrotte.',
+    'window.closeUnsupported': "Chiusura non disponibile nel browser. Chiudi la scheda per uscire.",
+    'window.minimizeUnsupported': 'La minimizzazione richiede il wrapper desktop.',
+    'modal.cancel': 'Annulla',
+    'modal.confirm': 'Confirma',
+    'modal.delete': 'Elimina',
+    'modal.save': 'Salva',
+    'modal.unlock': 'Sblocca',
+    'unlock.title': 'Inserisci la password',
+    'unlock.text': 'Vault: {file}',
+    'unlock.placeholder': 'Password del vault',
+    'drag.dropHere': 'Rilascia qui il file',
+  },
+  en: {
+    'app.title': 'Secure Vault Desktop',
+    'app.name': 'Secure Vault',
+    'app.version': 'Desktop · v2.0',
+    'search.placeholder': 'Search file manager...',
+    'nav.workspace': 'Workspace',
+    'nav.create': 'Create vault',
+    'nav.open': 'Open vault',
+    'nav.filemanager': 'File manager',
+    'nav.tools': 'Tools',
+    'nav.pdf': 'PDF Recap',
+    'nav.activity': 'Activity',
+    'nav.footer': 'Local encryption. No server.',
+    'create.title': 'Create a vault',
+    'create.subtitle': 'Select a file, set a password and generate the encrypted vault.',
+    'create.info': 'Encryption happens entirely locally. No file is uploaded to external servers.',
+    'create.dropTitle': 'Drop the file to protect here',
+    'create.dropHint': 'or',
+    'create.dropBrowse': 'browse from your computer',
+    'create.password': 'Password',
+    'create.passwordPlaceholder': 'Choose a strong password',
+    'create.confirm': 'Confirm password',
+    'create.confirmPlaceholder': 'Repeat the password',
+    'create.security': 'Security level',
+    'create.securityDesc': 'AES-256-GCM offers maximum protection and is recommended for important files.',
+    'create.securityDesc128': 'AES-128-GCM is faster, suitable for non-critical files.',
+    'create.securityDesc192': 'AES-192-GCM is a good balance of speed and security.',
+    'create.expiry': 'Expiration (max 1 day)',
+    'create.expiryHint': 'Leave empty for no expiration. Maximum allowed is 24 hours from now.',
+    'create.maxOpens': 'Maximum number of opens',
+    'create.unlimited': 'Unlimited',
+    'create.button': 'Create vault',
+    'create.download': 'Download .vault',
+    'create.pdfRecap': 'PDF Recap',
+    'create.saveToFm': 'Save this vault to the local file manager',
+    'create.ready': 'Ready to create a vault.',
+    'create.success': 'Vault created successfully.',
+    'create.encrypting': 'Encrypting...',
+    'create.errorFile': 'Select a file first.',
+    'create.errorPassword': 'The password must be entered and match.',
+    'create.errorPasswordShort': 'Use a password of at least 6 characters.',
+    'create.expiryClamped': 'The expiration exceeded 24 hours and was clamped to the maximum allowed.',
+    'open.title': 'Open a vault',
+    'open.subtitle': 'Upload the .vault file and enter the password to recover the content.',
+    'open.dropTitle': 'Drop the .vault file here',
+    'open.password': 'Password',
+    'open.passwordPlaceholder': 'Enter the password',
+    'open.button': 'Open vault',
+    'open.download': 'Download content',
+    'open.saveToFm': 'Save this vault to the file manager after opening',
+    'open.ready': 'Ready to open a vault.',
+    'open.previewEmpty': 'No file opened yet.',
+    'open.success': 'Vault opened successfully.',
+    'open.decrypting': 'Decrypting...',
+    'open.errorFile': 'Select a vault file first.',
+    'open.errorPassword': 'Enter the password.',
+    'open.errorWrongPassword': 'Wrong password or corrupted file.',
+    'open.binary': 'Binary content. Download the recovered file.',
+    'fm.title': 'File manager',
+    'fm.subtitle': 'Vaults saved on this device. Open, rename, export, or delete without hunting for the .vault file.',
+    'fm.searchPlaceholder': 'Search by name...',
+    'fm.sortNewest': 'Newest',
+    'fm.sortOldest': 'Oldest',
+    'fm.sortNameAsc': 'Name A-Z',
+    'fm.sortNameDesc': 'Name Z-A',
+    'fm.sortSizeDesc': 'Size ↓',
+    'fm.sortSizeAsc': 'Size ↑',
+    'fm.import': 'Import .vault',
+    'fm.clearAll': 'Clear all',
+    'fm.emptyTitle': 'No saved vaults',
+    'fm.emptyText': 'Create a new vault or import an existing .vault file.',
+    'fm.noResults': 'No results for the current search.',
+    'fm.open': 'Open',
+    'fm.download': 'Download',
+    'fm.rename': 'Rename',
+    'fm.delete': 'Delete',
+    'fm.copyLink': 'Copy link',
+    'fm.expired': 'Expired',
+    'fm.opensExhausted': 'Opens exhausted',
+    'fm.opensLeft': '{n} opens left',
+    'fm.importSuccess': '{n} vaults imported into the file manager.',
+    'fm.importError': 'One or more files are not valid vaults.',
+    'fm.deleteConfirmTitle': 'Delete this vault?',
+    'fm.deleteConfirmText': 'The encrypted file will be removed from the local file manager. This cannot be undone.',
+    'fm.clearConfirmTitle': 'Clear the file manager?',
+    'fm.clearConfirmText': 'All vaults saved on this device will be permanently deleted.',
+    'fm.renameTitle': 'Rename vault',
+    'fm.renameLabel': 'New name',
+    'fm.deleted': 'Vault deleted.',
+    'fm.cleared': 'File manager cleared.',
+    'fm.renamed': 'Vault renamed.',
+    'fm.linkCopied': 'Link copied to clipboard.',
+    'fm.notFoundShared': 'The shared vault is not present on this device.',
+    'activity.imported': 'Imported vault {file}',
+    'activity.deleted': 'Deleted vault {file}',
+    'activity.renamed': 'Renamed {old} to {new}',
+    'recents.title': 'Recent vaults',
+    'pdf.title': 'PDF Recap',
+    'pdf.subtitle': 'Generate a PDF with password, link and vault opening rules.',
+    'pdf.language': 'PDF language',
+    'pdf.badge': '📄 Protected PDF',
+    'pdf.emptyTitle': 'Recap ready after creation',
+    'pdf.emptyText': 'Create a vault to generate a PDF with password, link and opening rules.',
+    'details.preview': 'Preview',
+    'details.details': 'Details',
+    'details.share': 'Share',
+    'details.noVault': 'No vault created',
+    'details.noVaultText': 'The vault preview will appear here after creation.',
+    'details.waitingFile': 'Waiting for a file',
+    'details.size': 'Size',
+    'details.security': 'Security',
+    'details.expiry': 'Expiration',
+    'details.opens': 'Opens',
+    'details.none': 'None',
+    'details.shareBadge': '🔗 Share link',
+    'details.shareTitle': 'Link ready after creation',
+    'details.shareText': 'Create a vault to generate a shareable link.',
+    'details.copyLink': 'Copy link',
+    'activity.title': 'Activity log',
+    'activity.subtitle': 'History of the latest actions performed.',
+    'activity.empty': 'No activity yet.',
+    'activity.created': 'Created vault for {file}',
+    'activity.opened': 'Opened vault {file}',
+    'status.ready': 'Ready',
+    'status.busy': 'Processing...',
+    'status.done': 'Completed',
+    'status.error': 'Error',
+    'status.encryption': 'Encryption:',
+    'status.secure': 'All local',
+    'status.filecount': 'Saved files:',
+    'error.expired': 'This vault has expired.',
+    'error.maxOpens': 'This vault has reached the maximum number of opens.',
+    'error.invalid': 'This file is not a supported vault.',
+    'window.closeConfirmTitle': 'Close the application?',
+    'window.closeConfirmText': 'Any ongoing operations will be interrupted.',
+    'window.closeUnsupported': 'Closing is not available in the browser. Close the tab to exit.',
+    'window.minimizeUnsupported': 'Minimizing requires the desktop wrapper.',
+    'modal.cancel': 'Cancel',
+    'modal.confirm': 'Confirm',
+    'modal.delete': 'Delete',
+    'modal.save': 'Save',
+    'modal.unlock': 'Unlock',
+    'unlock.title': 'Enter the password',
+    'unlock.text': 'Vault: {file}',
+    'unlock.placeholder': 'Vault password',
+    'drag.dropHere': 'Drop the file here',
+  }
+};
+
+let currentLang = localStorage.getItem('vault-lang') || 'it';
+let currentTheme = localStorage.getItem('vault-theme') || 'light';
+let pdfLangOverride = localStorage.getItem('vault-pdf-lang') || currentLang;
+
+function t(key, values = {}) {
+  const template = translations[currentLang]?.[key] || translations.it[key] || key;
+  return Object.entries(values).reduce((text, [k, v]) => text.replaceAll(`{${k}}`, v), template);
+}
+function tLang(lang, key, values = {}) {
+  const template = translations[lang]?.[key] || translations.it[key] || key;
+  return Object.entries(values).reduce((text, [k, v]) => text.replaceAll(`{${k}}`, v), template);
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  const langFlag = document.getElementById('langFlag');
+  const langLabel = document.getElementById('langLabel');
+  if (langFlag) langFlag.textContent = currentLang === 'en' ? '🇬🇧' : '🇮🇹';
+  if (langLabel) langLabel.textContent = currentLang === 'en' ? 'EN' : 'IT';
+  updateSecurityLevel(document.getElementById('securityLevel')?.value);
+  renderActivity();
+  renderFileManager();
+}
+
+function applyTheme() {
+  document.documentElement.dataset.theme = currentTheme;
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    if (currentTheme === 'dark') {
+      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    } else {
+      icon.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+    }
+  }
+}
+
+/* ============================================
+   TOASTS
+   ============================================ */
+function toast(message, type = 'info', duration = 3200) {
+  const root = document.getElementById('toastRoot');
+  const el = document.createElement('div');
+  el.className = `win-toast is-${type}`;
+  const icons = {
+    success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+    error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+    info: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+  };
+  el.innerHTML = `<span class="win-toast__icon">${icons[type] || icons.info}</span><span>${escapeHtml(message)}</span>`;
+  root.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(6px)'; el.style.transition = 'all .2s'; setTimeout(() => el.remove(), 200); }, duration);
+}
+
+function legacyAnchorDownload(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function getTauriFileApis() {
+  const invoke = window.__TAURI__?.core?.invoke || window.__TAURI_INTERNALS__?.invoke;
+  if (!invoke) return null;
+
+  return {
+    dialogApi: {
+      save: (options) => invoke('plugin:dialog|save', { options }),
+    },
+    fsApi: {
+      writeFile: (targetPath, bytes) => invoke('plugin:fs|write_file', bytes, {
+        headers: {
+          path: encodeURIComponent(targetPath),
+          options: JSON.stringify({}),
+        },
+      }),
+    },
+  };
+}
+
+async function saveBlobNative(blob, filename) {
+  const apis = getTauriFileApis();
+  if (!apis) return null;
+
+  const { dialogApi, fsApi } = apis;
+  const targetPath = await dialogApi.save({ defaultPath: filename });
+  if (!targetPath) return false;
+
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  await fsApi.writeFile(targetPath, bytes);
+  toast(`File salvato in: ${targetPath}`, 'success', 8000);
+  alert(`File salvato con successo:\n\n${targetPath}`);
+  return targetPath;
+}
+
+async function downloadBlob(blob, filename) {
+  try {
+    const nativeResult = await saveBlobNative(blob, filename);
+    if (nativeResult !== null) return nativeResult;
+  } catch (error) {
+    console.warn('Native file save failed, falling back to browser download.', error);
+  }
+
+  legacyAnchorDownload(blob, filename);
+  toast(`File scaricato: ${filename}. Controlla la cartella Download.`, 'success', 8000);
+  alert(`File scaricato: ${filename}\n\nControlla la cartella Download.`);
+  return filename;
+}
+
+/* ============================================
+   MODALS
+   ============================================ */
+function closeModal() { document.getElementById('modalRoot').innerHTML = ''; document.removeEventListener('keydown', modalEscHandler); }
+function modalEscHandler(e) { if (e.key === 'Escape') closeModal(); }
+function openModal(innerHtml, onMount) {
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="win-modal-overlay" id="modalOverlay"><div class="win-modal">${innerHtml}</div></div>`;
+  document.getElementById('modalOverlay').addEventListener('mousedown', (e) => { if (e.target.id === 'modalOverlay') closeModal(); });
+  document.addEventListener('keydown', modalEscHandler);
+  if (onMount) onMount(root);
+}
+function confirmModal({ title, text, confirmLabel, danger = false, onConfirm }) {
+  openModal(`
+    <h3 class="win-modal__title">${escapeHtml(title)}</h3>
+    <p class="win-modal__text">${escapeHtml(text)}</p>
+    <div class="win-modal__actions">
+      <button class="win-btn win-btn--standard" id="modalCancelBtn" type="button">${t('modal.cancel')}</button>
+      <button class="win-btn ${danger ? 'win-btn--danger' : 'win-btn--accent'}" id="modalConfirmBtn" type="button">${escapeHtml(confirmLabel || t('modal.confirm'))}</button>
+    </div>
+  `, (root) => {
+    root.querySelector('#modalCancelBtn').addEventListener('click', closeModal);
+    root.querySelector('#modalConfirmBtn').addEventListener('click', () => { closeModal(); onConfirm(); });
+  });
+}
+function promptModal({ title, label, value = '', confirmLabel, onConfirm }) {
+  openModal(`
+    <h3 class="win-modal__title">${escapeHtml(title)}</h3>
+    <div class="win-field">
+      <label class="win-field__label">${escapeHtml(label)}</label>
+      <input type="text" id="modalPromptInput" class="win-field__input" value="${escapeHtml(value)}" />
+    </div>
+    <div class="win-modal__actions">
+      <button class="win-btn win-btn--standard" id="modalCancelBtn" type="button">${t('modal.cancel')}</button>
+      <button class="win-btn win-btn--accent" id="modalConfirmBtn" type="button">${escapeHtml(confirmLabel || t('modal.save'))}</button>
+    </div>
+  `, (root) => {
+    const input = root.querySelector('#modalPromptInput');
+    input.focus(); input.select();
+    root.querySelector('#modalCancelBtn').addEventListener('click', closeModal);
+    const submit = () => { const v = input.value.trim(); if (!v) return; closeModal(); onConfirm(v); };
+    root.querySelector('#modalConfirmBtn').addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  });
+}
+function passwordModal({ title, text, placeholder, confirmLabel, onConfirm }) {
+  openModal(`
+    <h3 class="win-modal__title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      ${escapeHtml(title)}
+    </h3>
+    <p class="win-modal__text">${escapeHtml(text)}</p>
+    <div class="win-field">
+      <div class="win-field__row">
+        <input type="password" id="modalPasswordInput" class="win-field__input" placeholder="${escapeHtml(placeholder || '')}" />
+        <button class="win-field__reveal" type="button" id="modalPasswordReveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="win-field__hint is-error is-hidden" id="modalPasswordError"></div>
+    </div>
+    <div class="win-modal__actions">
+      <button class="win-btn win-btn--standard" id="modalCancelBtn" type="button">${t('modal.cancel')}</button>
+      <button class="win-btn win-btn--accent" id="modalConfirmBtn" type="button">${escapeHtml(confirmLabel || t('modal.unlock'))}</button>
+    </div>
+  `, (root) => {
+    const input = root.querySelector('#modalPasswordInput');
+    input.focus();
+    root.querySelector('#modalPasswordReveal').addEventListener('click', () => { input.type = input.type === 'password' ? 'text' : 'password'; });
+    root.querySelector('#modalCancelBtn').addEventListener('click', closeModal);
+    const submit = async () => {
+      const pw = input.value;
+      if (!pw) return;
+      const btn = root.querySelector('#modalConfirmBtn');
+      const errEl = root.querySelector('#modalPasswordError');
+      errEl.classList.add('is-hidden');
+      setBtnBusy(btn, true);
+      try {
+        await onConfirm(pw);
+        closeModal();
+      } catch (err) {
+        errEl.textContent = err.message || t('open.errorWrongPassword');
+        errEl.classList.remove('is-hidden');
+        setBtnBusy(btn, false);
+      }
+    };
+    root.querySelector('#modalConfirmBtn').addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  });
+}
+function setBtnBusy(btn, busy) {
+  if (!btn) return;
+  if (busy) {
+    btn.dataset.originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="win-btn__spinner"></span>';
+    btn.disabled = true;
+  } else {
+    if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+    btn.disabled = false;
+  }
+}
+
+/* ============================================
+   CONTEXT MENU
+   ============================================ */
+function closeContextMenu() { document.getElementById('ctxMenuRoot').innerHTML = ''; document.removeEventListener('click', closeContextMenu); }
+function openContextMenu(x, y, items) {
+  closeContextMenu();
+  const root = document.getElementById('ctxMenuRoot');
+  const menu = document.createElement('div');
+  menu.className = 'win-ctxmenu is-open';
+  menu.innerHTML = items.map(it => {
+    if (it.sep) return '<div class="win-ctxmenu__sep"></div>';
+    return `<div class="win-ctxmenu__item ${it.danger ? 'is-danger' : ''}" data-action="${it.id}">${it.icon || ''}<span>${escapeHtml(it.label)}</span></div>`;
+  }).join('');
+  root.appendChild(menu);
+  const vw = window.innerWidth, vh = window.innerHeight;
+  menu.style.left = Math.min(x, vw - 210) + 'px';
+  menu.style.top = Math.min(y, vh - (items.length * 34 + 20)) + 'px';
+  menu.querySelectorAll('.win-ctxmenu__item').forEach(el => {
+    el.addEventListener('click', () => {
+      const item = items.find(i => i.id === el.dataset.action);
+      closeContextMenu();
+      if (item && item.onClick) item.onClick();
+    });
+  });
+  setTimeout(() => document.addEventListener('click', closeContextMenu), 0);
+}
+
+/* ============================================
+   INDEXEDDB FILE MANAGER STORE
+   ============================================ */
+const DB_NAME = 'SecureVaultDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'vaults';
+let dbPromise = null;
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('createdAt', 'createdAt');
+        store.createIndex('fileName', 'fileName');
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function dbPut(record) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbGet(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbDelete(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbClear() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+/* Strip app-only fields so the exported .vault stays 100% compatible with the desktop (Qt) reader */
+function toPortableVault(record) {
+  const { displayName, savedAt, lastOpenedAt, ...portable } = record;
+  return portable;
+}
+
+/* ============================================
+   HELPERS
+   ============================================ */
+function formatBytes(size = 0) {
+  if (!size) return '0 KB';
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+function formatDate(value) {
+  return new Date(value).toLocaleString(currentLang === 'en' ? 'en-US' : 'it-IT');
+}
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  return btoa(binary);
+}
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+/* ============================================
+   VIEW SWITCHING
+   ============================================ */
+const navItems = document.querySelectorAll('.win-nav__item[data-view]');
+const views = document.querySelectorAll('.win-view');
+const detailsTabs = document.querySelectorAll('.win-details__tab');
+const detailsPanels = document.querySelectorAll('.win-details__panel');
+
+function switchView(viewName) {
+  views.forEach(v => v.classList.toggle('is-active', v.dataset.view === viewName));
+  navItems.forEach(b => b.classList.toggle('is-active', b.dataset.view === viewName));
+  if (viewName === 'filemanager') renderFileManager();
+  if (viewName === 'activity') renderActivity();
+}
+navItems.forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
+detailsTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    detailsTabs.forEach(x => x.classList.toggle('is-active', x === tab));
+    detailsPanels.forEach(p => p.classList.toggle('is-active', p.dataset.panel === tab.dataset.panel));
+  });
+});
+
+/* ============================================
+   LANGUAGE & THEME
+   ============================================ */
+document.getElementById('langSwitch').addEventListener('click', () => {
+  currentLang = currentLang === 'it' ? 'en' : 'it';
+  localStorage.setItem('vault-lang', currentLang);
+  applyLanguage();
+});
+document.getElementById('themeToggle').addEventListener('click', () => {
+  currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+  localStorage.setItem('vault-theme', currentTheme);
+  applyTheme();
+});
+document.getElementById('pdfLanguage').addEventListener('change', (e) => {
+  pdfLangOverride = e.target.value;
+  localStorage.setItem('vault-pdf-lang', pdfLangOverride);
+});
+document.getElementById('pdfLanguage').value = pdfLangOverride;
+
+/* ============================================
+   WINDOW CONTROLS
+   (window.vaultHost can be injected by a native wrapper: Electron/Tauri/Qt WebView)
+   ============================================ */
+document.getElementById('winMinimize').addEventListener('click', () => {
+  if (window.vaultHost?.minimize) window.vaultHost.minimize();
+  else toast(t('window.minimizeUnsupported'), 'info');
+});
+document.getElementById('winMaximize').addEventListener('click', () => {
+  if (window.vaultHost?.toggleMaximize) { window.vaultHost.toggleMaximize(); return; }
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+  else document.exitFullscreen?.().catch(() => {});
+});
+document.getElementById('winClose').addEventListener('click', () => {
+  confirmModal({
+    title: t('window.closeConfirmTitle'),
+    text: t('window.closeConfirmText'),
+    confirmLabel: t('modal.confirm'),
+    danger: true,
+    onConfirm: () => {
+      if (window.vaultHost?.close) window.vaultHost.close();
+      else if (window.opener) window.close();
+      else toast(t('window.closeUnsupported'), 'info');
+    }
+  });
+});
+
+/* ============================================
+   REVEAL PASSWORD TOGGLES
+   ============================================ */
+document.querySelectorAll('.win-field__reveal[data-toggle-for]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.toggleFor);
+    if (input) input.type = input.type === 'password' ? 'text' : 'password';
+  });
+});
+
+/* ============================================
+   PASSWORD STRENGTH + MATCH
+   ============================================ */
+function scorePassword(pw) {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) score++;
+  return Math.min(score, 4);
+}
+function renderPasswordStrength() {
+  const pw = document.getElementById('password').value;
+  const bars = document.querySelectorAll('#passwordStrength .win-strength__bar');
+  const score = scorePassword(pw);
+  const cls = score <= 1 ? 'is-on-weak' : score <= 2 ? 'is-on-mid' : 'is-on-strong';
+  bars.forEach((bar, i) => {
+    bar.className = 'win-strength__bar';
+    if (i < score) bar.classList.add(cls);
+  });
+}
+function renderPasswordMatch() {
+  const pw = document.getElementById('password').value;
+  const cpw = document.getElementById('confirmPassword').value;
+  const hint = document.getElementById('passwordMatchHint');
+  if (!cpw) { hint.textContent = ''; hint.classList.remove('is-error'); return; }
+  if (pw === cpw) { hint.textContent = currentLang === 'en' ? 'Passwords match.' : 'Le password coincidono.'; hint.classList.remove('is-error'); }
+  else { hint.textContent = currentLang === 'en' ? 'Passwords do not match.' : 'Le password non coincidono.'; hint.classList.add('is-error'); }
+}
+document.getElementById('password').addEventListener('input', () => { renderPasswordStrength(); renderPasswordMatch(); });
+document.getElementById('confirmPassword').addEventListener('input', renderPasswordMatch);
+
+/* ============================================
+   DROP ZONES
+   ============================================ */
+function setupDropzone(dz, input, onFile) {
+  if (!dz || !input) return;
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('is-dragover'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('is-dragover'); }));
+  dz.addEventListener('drop', e => {
+    const file = e.dataTransfer?.files?.[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  dz.addEventListener('click', (e) => { if (e.target.tagName !== 'INPUT') input.click(); });
+  if (onFile) input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); });
+}
+setupDropzone(document.getElementById('dropzone'), document.getElementById('fileInput'), (file) => {
+  const el = document.getElementById('createFileName');
+  el.textContent = `${file.name} · ${formatBytes(file.size)}`;
+  el.classList.remove('is-hidden');
+});
+setupDropzone(document.getElementById('dropzoneOpen'), document.getElementById('vaultInput'), (file) => {
+  const el = document.getElementById('openFileName');
+  el.textContent = `${file.name} · ${formatBytes(file.size)}`;
+  el.classList.remove('is-hidden');
+});
+
+/* Global drag overlay: dropping a .vault file anywhere imports it, other files jump to Create */
+let dragDepth = 0;
+window.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; document.getElementById('dragOverlay').classList.add('is-active'); });
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (dragDepth === 0) document.getElementById('dragOverlay').classList.remove('is-active'); });
+window.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.getElementById('dragOverlay').classList.remove('is-active');
+  if (e.target.closest('.win-dropzone')) return; // already handled by the specific dropzone
+  const files = Array.from(e.dataTransfer?.files || []);
+  if (!files.length) return;
+  const vaultFiles = files.filter(f => f.name.toLowerCase().endsWith('.vault'));
+  if (vaultFiles.length) {
+    await importVaultFiles(vaultFiles);
+  } else {
+    switchView('create');
+    const dt = new DataTransfer();
+    dt.items.add(files[0]);
+    const input = document.getElementById('fileInput');
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+});
+
+/* ============================================
+   CRYPTO
+   ============================================ */
+const SECURITY_LEVELS = [
+  { sliderValue: 0, keyLength: 128, label: 'AES-128-GCM', descKey: 'create.securityDesc128' },
+  { sliderValue: 1, keyLength: 192, label: 'AES-192-GCM', descKey: 'create.securityDesc192' },
+  { sliderValue: 2, keyLength: 256, label: 'AES-256-GCM', descKey: 'create.securityDesc' },
+];
+let selectedKeyLength = 256;
+let selectedMaxOpens = 0;
+let currentVaultBlob = null;
+let currentDecryptedBlob = null;
+let currentDecryptedName = '';
+let lastVaultRecap = null;
+
+async function deriveKey(password, salt, keyLength = 256) {
+  const encoder = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 250000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: keyLength },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+async function encryptVault(file, password, options = {}) {
+  const fileBytes = new Uint8Array(await file.arrayBuffer());
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const keyLength = options.keyLength || 256;
+  const key = await deriveKey(password, salt, keyLength);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, fileBytes);
+  return {
+    version: 1,
+    format: 'secure-vault-web',
+    algorithm: 'AES-GCM',
+    keyLength,
+    id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    fileName: file.name,
+    mimeType: file.type || 'application/octet-stream',
+    size: file.size,
+    createdAt: new Date().toISOString(),
+    expiresAt: options.expiresAt || null,
+    maxOpens: options.maxOpens || 0,
+    openCount: 0,
+    salt: arrayBufferToBase64(salt),
+    iv: arrayBufferToBase64(iv),
+    ciphertext: arrayBufferToBase64(ciphertext),
+  };
+}
+async function decryptVault(vault, password) {
+  if (vault.format !== 'secure-vault-web') throw new Error(t('error.invalid'));
+  const now = new Date();
+  if (vault.expiresAt && new Date(vault.expiresAt) <= now) throw new Error(t('error.expired'));
+  const maxOpens = Number(vault.maxOpens || 0);
+  const openCount = Number(vault.openCount || 0);
+  if (maxOpens > 0 && openCount >= maxOpens) throw new Error(t('error.maxOpens'));
+  const salt = new Uint8Array(base64ToArrayBuffer(vault.salt));
+  const iv = new Uint8Array(base64ToArrayBuffer(vault.iv));
+  const key = await deriveKey(password, salt, vault.keyLength);
+  let plaintext;
+  try {
+    plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, base64ToArrayBuffer(vault.ciphertext));
+  } catch {
+    throw new Error(t('open.errorWrongPassword'));
+  }
+  const fileBytes = new Uint8Array(plaintext);
+  const blob = new Blob([fileBytes], { type: vault.mimeType });
+  return { blob, fileBytes };
+}
+
+/* SECURITY LEVEL */
+function updateSecurityLevel(value) {
+  const preset = SECURITY_LEVELS.find(l => l.sliderValue === Number(value)) || SECURITY_LEVELS[2];
+  selectedKeyLength = preset.keyLength;
+  const label = document.getElementById('securityLevelLabel');
+  const status = document.getElementById('statusEncryption');
+  const desc = document.getElementById('securityLevelDescription');
+  if (label) label.textContent = preset.label;
+  if (status) status.textContent = preset.label;
+  if (desc) desc.textContent = t(preset.descKey);
+}
+document.getElementById('securityLevel').addEventListener('input', (e) => updateSecurityLevel(e.target.value));
+
+/* MAX OPENS */
+document.querySelectorAll('.max-open-option').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.max-open-option').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    selectedMaxOpens = Number(btn.dataset.value || 0);
+  });
+});
+
+/* EXPIRY (hard-clamped server-side-equivalent: enforced in code, not just via input attributes) */
+const MAX_EXPIRY_MS = 24 * 60 * 60 * 1000;
+const expiresAtInput = document.getElementById('expiresAt');
+function refreshExpiryMin() {
+  const now = new Date();
+  const offset = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  expiresAtInput.min = offset.toISOString().slice(0, 16);
+  const maxOffset = new Date(now.getTime() + MAX_EXPIRY_MS - now.getTimezoneOffset() * 60000);
+  expiresAtInput.max = maxOffset.toISOString().slice(0, 16);
+}
+refreshExpiryMin();
+expiresAtInput.addEventListener('focus', refreshExpiryMin);
+function computeClampedExpiry() {
+  if (!expiresAtInput.value) return { expiresAt: null, clamped: false };
+  const chosen = new Date(expiresAtInput.value);
+  if (isNaN(chosen.getTime()) || chosen <= new Date()) return { expiresAt: null, clamped: false };
+  const max = new Date(Date.now() + MAX_EXPIRY_MS);
+  if (chosen > max) return { expiresAt: max.toISOString(), clamped: true };
+  return { expiresAt: chosen.toISOString(), clamped: false };
+}
+
+/* ============================================
+   STATUS BAR
+   ============================================ */
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+function setStatus(state, text) {
+  statusDot.className = 'win-statusbar__dot';
+  if (state === 'busy') statusDot.classList.add('is-busy');
+  if (state === 'error') statusDot.classList.add('is-error');
+  statusText.textContent = text;
+}
+
+/* ============================================
+   ACTIVITY LOG
+   ============================================ */
+function logActivity(message) {
+  const history = JSON.parse(localStorage.getItem('vault-activity') || '[]');
+  history.unshift(`${new Date().toLocaleString(currentLang === 'en' ? 'en-US' : 'it-IT')} - ${message}`);
+  localStorage.setItem('vault-activity', JSON.stringify(history.slice(0, 30)));
+  renderActivity();
+}
+function renderActivity() {
+  const el = document.getElementById('activityLogDesktop');
+  if (!el) return;
+  const history = JSON.parse(localStorage.getItem('vault-activity') || '[]');
+  if (!history.length) {
+    el.innerHTML = `<div style="color:var(--win-text-tertiary); font-size:12px; padding:20px; text-align:center;">${t('activity.empty')}</div>`;
+    return;
+  }
+  el.innerHTML = history.map(e => `
+    <div class="win-activity-item">
+      <div class="win-activity-item__dot"></div>
+      <div>${escapeHtml(e)}</div>
+    </div>
+  `).join('');
+}
+
+/* ============================================
+   FILE MANAGER
+   ============================================ */
+let fmSearchTerm = '';
+let fmSortMode = 'date-desc';
+
+function vaultBadges(vault) {
+  const badges = [];
+  const now = new Date();
+  if (vault.expiresAt) {
+    if (new Date(vault.expiresAt) <= now) badges.push({ label: t('fm.expired'), danger: true });
+    else badges.push({ label: formatDate(vault.expiresAt) });
+  }
+  if (vault.maxOpens > 0) {
+    const left = vault.maxOpens - (vault.openCount || 0);
+    if (left <= 0) badges.push({ label: t('fm.opensExhausted'), danger: true });
+    else badges.push({ label: t('fm.opensLeft', { n: left }), warning: left <= 1 });
+  }
+  badges.push({ label: `AES-${vault.keyLength}` });
+  return badges;
+}
+
+async function renderFileManager() {
+  const grid = document.getElementById('fmGrid');
+  const empty = document.getElementById('fmEmpty');
+  if (!grid) return;
+  let records = await dbGetAll();
+
+  updateFmCount(records.length);
+
+  if (fmSearchTerm) {
+    const q = fmSearchTerm.toLowerCase();
+    records = records.filter(r => (r.displayName || r.fileName || '').toLowerCase().includes(q));
+  }
+  records.sort((a, b) => {
+    switch (fmSortMode) {
+      case 'date-asc': return new Date(a.createdAt) - new Date(b.createdAt);
+      case 'name-asc': return (a.displayName || a.fileName).localeCompare(b.displayName || b.fileName);
+      case 'name-desc': return (b.displayName || b.fileName).localeCompare(a.displayName || a.fileName);
+      case 'size-desc': return (b.size || 0) - (a.size || 0);
+      case 'size-asc': return (a.size || 0) - (b.size || 0);
+      default: return new Date(b.createdAt) - new Date(a.createdAt);
+    }
+  });
+
+  if (!records.length) {
+    grid.innerHTML = '';
+    empty.classList.remove('is-hidden');
+    if (fmSearchTerm) {
+      empty.querySelector('.win-empty__title').textContent = t('fm.noResults');
+      empty.querySelector('.win-empty__text').textContent = '';
+    } else {
+      empty.querySelector('.win-empty__title').textContent = t('fm.emptyTitle');
+      empty.querySelector('.win-empty__text').textContent = t('fm.emptyText');
+    }
+    return;
+  }
+  empty.classList.add('is-hidden');
+
+  grid.innerHTML = records.map(r => `
+    <div class="win-fm-card" data-id="${escapeHtml(r.id)}">
+      <div class="win-fm-card__top">
+        <div class="win-fm-card__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div class="win-fm-card__body">
+          <p class="win-fm-card__name" data-role="name" title="${escapeHtml(r.displayName || r.fileName)}">${escapeHtml(r.displayName || r.fileName)}</p>
+          <p class="win-fm-card__meta">${escapeHtml(formatBytes(r.size))} · ${escapeHtml(formatDate(r.createdAt))}</p>
+        </div>
+        <button class="win-icon-btn win-fm-menu-btn" data-role="menu" title="Menu" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>
+        </button>
+      </div>
+      <div class="win-fm-card__badges">
+        ${vaultBadges(r).map(b => `<span class="win-fm-badge ${b.danger ? 'is-danger' : b.warning ? 'is-warning' : ''}">${escapeHtml(b.label)}</span>`).join('')}
+      </div>
+      <div class="win-fm-card__actions">
+        <button class="win-btn win-btn--accent" data-role="unlock" type="button" style="flex:1;">
+          <svg class="win-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <span>${t('fm.open')}</span>
+        </button>
+        <button class="win-icon-btn" data-role="download" title="${t('fm.download')}" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        </button>
+        <button class="win-icon-btn is-danger" data-role="delete" title="${t('fm.delete')}" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.win-fm-card').forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector('[data-role="unlock"]').addEventListener('click', () => fmUnlockFlow(id));
+    card.querySelector('[data-role="download"]').addEventListener('click', () => fmDownload(id));
+    card.querySelector('[data-role="delete"]').addEventListener('click', () => fmDeleteFlow(id));
+    card.querySelector('[data-role="name"]').addEventListener('dblclick', () => fmRenameFlow(id));
+    card.querySelector('[data-role="menu"]').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rect = e.currentTarget.getBoundingClientRect();
+      openFmContextMenu(rect.left, rect.bottom + 4, id);
+    });
+    card.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      openFmContextMenu(e.clientX, e.clientY, id);
+    });
+  });
+}
+
+function openFmContextMenu(x, y, id) {
+  openContextMenu(x, y, [
+    { id: 'open', label: t('fm.open'), icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>', onClick: () => fmUnlockFlow(id) },
+    { id: 'download', label: t('fm.download'), icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>', onClick: () => fmDownload(id) },
+    { id: 'copylink', label: t('fm.copyLink'), icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>', onClick: () => fmCopyLink(id) },
+    { id: 'rename', label: t('fm.rename'), icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z"/></svg>', onClick: () => fmRenameFlow(id) },
+    { sep: true },
+    { id: 'delete', label: t('fm.delete'), danger: true, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>', onClick: () => fmDeleteFlow(id) },
+  ]);
+}
+
+function updateFmCount(n) {
+  const badge = document.getElementById('fmCount');
+  const statusCount = document.getElementById('statusFileCount');
+  if (badge) badge.textContent = String(n);
+  if (statusCount) statusCount.textContent = String(n);
+}
+
+async function fmUnlockFlow(id) {
+  const record = await dbGet(id);
+  if (!record) { toast(t('fm.notFoundShared'), 'error'); return; }
+  passwordModal({
+    title: t('unlock.title'),
+    text: t('unlock.text', { file: record.displayName || record.fileName }),
+    placeholder: t('unlock.placeholder'),
+    onConfirm: async (password) => {
+      const { blob } = await decryptVault(record, password);
+      record.openCount = (record.openCount || 0) + 1;
+      record.lastOpenedAt = new Date().toISOString();
+      await dbPut(record);
+      await downloadBlob(blob, record.fileName);
+      toast(t('open.success'), 'success');
+      logActivity(t('activity.opened', { file: record.displayName || record.fileName }));
+      renderFileManager();
+    }
+  });
+}
+async function fmDownload(id) {
+  const record = await dbGet(id);
+  if (!record) return;
+  const blob = new Blob([JSON.stringify(toPortableVault(record))], { type: 'application/json' });
+  const filename = `${(record.displayName || record.fileName || 'vault').replace(/[^\w.-]+/g, '-')}.vault`;
+  await downloadBlob(blob, filename);
+}
+function fmCopyLink(id) {
+  const url = new URL(window.location.href);
+  url.search = ''; url.hash = '';
+  url.searchParams.set('v', id);
+  navigator.clipboard?.writeText(url.toString()).then(() => toast(t('fm.linkCopied'), 'success')).catch(() => toast(url.toString(), 'info'));
+}
+function fmRenameFlow(id) {
+  dbGet(id).then(record => {
+    if (!record) return;
+    promptModal({
+      title: t('fm.renameTitle'),
+      label: t('fm.renameLabel'),
+      value: record.displayName || record.fileName,
+      onConfirm: async (newName) => {
+        const oldName = record.displayName || record.fileName;
+        record.displayName = newName;
+        await dbPut(record);
+        toast(t('fm.renamed'), 'success');
+        logActivity(t('activity.renamed', { old: oldName, new: newName }));
+        renderFileManager();
+      }
+    });
+  });
+}
+function fmDeleteFlow(id) {
+  dbGet(id).then(record => {
+    if (!record) return;
+    confirmModal({
+      title: t('fm.deleteConfirmTitle'),
+      text: t('fm.deleteConfirmText'),
+      confirmLabel: t('modal.delete'),
+      danger: true,
+      onConfirm: async () => {
+        await dbDelete(id);
+        toast(t('fm.deleted'), 'success');
+        logActivity(t('activity.deleted', { file: record.displayName || record.fileName }));
+        renderFileManager();
+      }
+    });
+  });
+}
+
+document.getElementById('fmSearch').addEventListener('input', (e) => { fmSearchTerm = e.target.value; renderFileManager(); });
+document.getElementById('globalSearch').addEventListener('input', (e) => {
+  fmSearchTerm = e.target.value;
+  document.getElementById('fmSearch').value = e.target.value;
+  if (e.target.value) switchView('filemanager');
+  renderFileManager();
+});
+document.getElementById('fmSort').addEventListener('change', (e) => { fmSortMode = e.target.value; renderFileManager(); });
+document.getElementById('fmClearBtn').addEventListener('click', () => {
+  confirmModal({
+    title: t('fm.clearConfirmTitle'),
+    text: t('fm.clearConfirmText'),
+    confirmLabel: t('modal.delete'),
+    danger: true,
+    onConfirm: async () => {
+      await dbClear();
+      toast(t('fm.cleared'), 'success');
+      renderFileManager();
+    }
+  });
+});
+document.getElementById('fmImportBtn').addEventListener('click', () => document.getElementById('fmImportInput').click());
+document.getElementById('fmImportInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (files.length) await importVaultFiles(files);
+  e.target.value = '';
+});
+async function importVaultFiles(files) {
+  let ok = 0, fail = 0;
+  for (const file of files) {
+    try {
+      const text = await file.text();
+      const vault = JSON.parse(text);
+      if (vault.format !== 'secure-vault-web' || !vault.id || !vault.ciphertext) { fail++; continue; }
+      const record = { ...vault, displayName: vault.fileName, savedAt: new Date().toISOString() };
+      await dbPut(record);
+      logActivity(t('activity.imported', { file: vault.fileName }));
+      ok++;
+    } catch { fail++; }
+  }
+  if (ok) toast(t('fm.importSuccess', { n: ok }), 'success');
+  if (fail) toast(t('fm.importError'), 'error');
+  renderFileManager();
+}
+
+/* ============================================
+   INSPECTOR (details aside)
+   ============================================ */
+function updateInspectorDetails(vault) {
+  const n = document.getElementById('detailFileName');
+  const tp = document.getElementById('detailFileType');
+  const s = document.getElementById('detailSize');
+  const sec = document.getElementById('detailSecurity');
+  const exp = document.getElementById('detailExpiry');
+  const op = document.getElementById('detailOpens');
+  if (n) n.textContent = vault?.fileName || '—';
+  if (tp) tp.textContent = vault?.mimeType || t('details.waitingFile');
+  if (s) s.textContent = vault ? formatBytes(vault.size) : '—';
+  if (sec) sec.textContent = vault ? `AES-${vault.keyLength}-GCM` : 'AES-256-GCM';
+  if (exp) exp.textContent = vault?.expiresAt ? formatDate(vault.expiresAt) : t('details.none');
+  if (op) op.textContent = vault?.maxOpens ? `${vault.maxOpens} max` : t('create.unlimited');
+}
+function renderVaultSummary(vault) {
+  const preview = document.getElementById('vaultPreview');
+  preview.innerHTML = `
+    <div class="win-file-card" style="width:100%;">
+      <div class="win-file-card__header">
+        <div class="win-file-card__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <div>
+          <p class="win-file-card__name">${escapeHtml(vault.fileName)}</p>
+          <p class="win-file-card__meta">${escapeHtml(vault.mimeType)}</p>
+        </div>
+      </div>
+      <div class="win-file-card__rows">
+        <div class="win-file-card__row"><span class="win-file-card__row-label">${t('details.size')}</span><span class="win-file-card__row-value">${formatBytes(vault.size)}</span></div>
+        <div class="win-file-card__row"><span class="win-file-card__row-label">${t('details.security')}</span><span class="win-file-card__row-value">AES-${vault.keyLength}-GCM</span></div>
+        <div class="win-file-card__row"><span class="win-file-card__row-label">${t('details.expiry')}</span><span class="win-file-card__row-value">${vault.expiresAt ? formatDate(vault.expiresAt) : t('details.none')}</span></div>
+        <div class="win-file-card__row"><span class="win-file-card__row-label">${t('details.opens')}</span><span class="win-file-card__row-value">${vault.maxOpens ? `${vault.maxOpens} max` : t('create.unlimited')}</span></div>
+      </div>
+    </div>
+  `;
+  updateInspectorDetails(vault);
+}
+
+/* ============================================
+   PDF RECAP
+   ============================================ */
+function updatePdfRecapCard(recap) {
+  const card = document.getElementById('pdfRecapCard');
+  const file = document.getElementById('pdfRecapFile');
+  const details = document.getElementById('pdfRecapDetails');
+  const pdfBtn2 = document.getElementById('downloadRecapPdfBtn2');
+  if (!card || !file || !details) return;
+  card.classList.toggle('is-ready', Boolean(recap));
+  if (pdfBtn2) pdfBtn2.disabled = !recap;
+  if (!recap?.vault) { file.textContent = t('pdf.emptyTitle'); details.textContent = t('pdf.emptyText'); return; }
+  const v = recap.vault;
+  const expiry = v.expiresAt ? formatDate(v.expiresAt) : t('details.none');
+  const opens = v.maxOpens ? `${v.maxOpens} max` : t('create.unlimited');
+  file.textContent = `PDF: ${v.fileName}`;
+  details.textContent = `${formatBytes(v.size)} · ${expiry} · ${opens}`;
+}
+function downloadVaultRecapPdf(recap) {
+  if (!recap) return;
+  const JsPDF = window.jspdf?.jsPDF;
+  if (!JsPDF) { toast('jsPDF not available', 'error'); return; }
+  const lang = pdfLangOverride;
+  const doc = new JsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 42;
+  const bodyWidth = pageWidth - margin * 2;
+  const v = recap.vault;
+  let y = 60;
+
+  doc.setFillColor(0, 120, 212);
+  doc.roundedRect(margin, y, bodyWidth, 90, 12, 12, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.text('Vault Recap', margin + 20, y + 36);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text(tLang(lang, 'pdf.subtitle'), margin + 20, y + 60);
+  y += 120;
+
+  doc.setFillColor(255, 247, 237);
+  doc.roundedRect(margin, y, bodyWidth, 45, 8, 8, 'F');
+  doc.setTextColor(154, 52, 18);
+  doc.setFontSize(10);
+  doc.text(lang === 'en' ? 'Contains the vault password. Store this PDF safely.' : 'Contiene la password del vault. Conserva questo PDF in un posto sicuro.', margin + 16, y + 22);
+  doc.text(lang === 'en' ? 'Maximum allowed expiration: 1 day.' : 'Scadenza massima consentita: 1 giorno.', margin + 16, y + 36);
+  y += 65;
+
+  const sections = [
+    { title: lang === 'en' ? 'Protected file' : 'File protetto', rows: [
+      [lang === 'en' ? 'Name' : 'Nome', v.fileName || 'vault'],
+      [lang === 'en' ? 'Type' : 'Tipo', v.mimeType || 'application/octet-stream'],
+      [lang === 'en' ? 'Size' : 'Dimensione', formatBytes(v.size)],
+      [lang === 'en' ? 'Created' : 'Creato', formatDate(v.createdAt)],
+    ]},
+    { title: lang === 'en' ? 'Security rules' : 'Regole di sicurezza', rows: [
+      [lang === 'en' ? 'Expiration' : 'Scadenza', v.expiresAt ? formatDate(v.expiresAt) : (lang === 'en' ? 'None' : 'Nessuna')],
+      [lang === 'en' ? 'Opens' : 'Aperture', v.maxOpens ? `${v.maxOpens} max` : (lang === 'en' ? 'Unlimited' : 'Illimitate')],
+      [lang === 'en' ? 'Security' : 'Sicurezza', `AES-${v.keyLength}-GCM`],
+      [lang === 'en' ? 'Vault ID' : 'ID vault', v.id],
+    ]},
+    { title: lang === 'en' ? 'Access and sharing' : 'Accesso e condivisione', rows: [
+      [lang === 'en' ? 'Password' : 'Password', recap.password],
+      [lang === 'en' ? 'Share link' : 'Link condivisione', recap.link],
+    ]},
+  ];
+
+  sections.forEach(section => {
+    doc.setTextColor(17, 24, 39);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text(section.title, margin, y);
+    y += 18;
+    section.rows.forEach(([label, value]) => {
+      if (y > 750) { doc.addPage(); y = 50; }
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(margin, y - 10, bodyWidth, 28, 5, 5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(71, 85, 105);
+      doc.text(label, margin + 10, y + 5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(17, 24, 39);
+      doc.text(String(value).slice(0, 80), margin + 150, y + 5);
+      y += 34;
+    });
+    y += 10;
+  });
+
+  const fileName = String(v.fileName || 'vault').replace(/[^\w.-]+/g, '-').slice(0, 48) || 'vault';
+  doc.save(`${fileName}-recap.pdf`);
+}
+document.getElementById('downloadRecapPdfBtn').addEventListener('click', () => downloadVaultRecapPdf(lastVaultRecap));
+document.getElementById('downloadRecapPdfBtn2').addEventListener('click', () => downloadVaultRecapPdf(lastVaultRecap));
+
+/* ============================================
+   CREATE VAULT
+   ============================================ */
+document.getElementById('createVaultBtn').addEventListener('click', async () => {
+  const file = document.getElementById('fileInput').files[0];
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const statusEl = document.getElementById('createStatus');
+  const downloadBtn = document.getElementById('downloadVaultBtn');
+  const pdfBtn = document.getElementById('downloadRecapPdfBtn');
+  const createBtn = document.getElementById('createVaultBtn');
+  const shareLink = document.getElementById('shareLink');
+  const progress = document.getElementById('createProgress');
+  const progressBar = document.getElementById('createProgressBar');
+
+  downloadBtn.disabled = true;
+  pdfBtn.disabled = true;
+  lastVaultRecap = null;
+  updatePdfRecapCard(null);
+  if (shareLink) shareLink.classList.add('is-hidden');
+
+  if (!file) { statusEl.textContent = t('create.errorFile'); statusEl.className = 'win-status is-error'; return; }
+  if (!password || password !== confirmPassword) { statusEl.textContent = t('create.errorPassword'); statusEl.className = 'win-status is-error'; return; }
+  if (password.length < 6) { statusEl.textContent = t('create.errorPasswordShort'); statusEl.className = 'win-status is-error'; return; }
+
+  statusEl.textContent = t('create.encrypting');
+  statusEl.className = 'win-status';
+  setStatus('busy', t('status.busy'));
+  setBtnBusy(createBtn, true);
+  progress.classList.remove('is-hidden');
+  progressBar.style.width = '30%';
+
+  try {
+    const { expiresAt, clamped } = computeClampedExpiry();
+    progressBar.style.width = '55%';
+    const vault = await encryptVault(file, password, { expiresAt, maxOpens: selectedMaxOpens, keyLength: selectedKeyLength });
+    progressBar.style.width = '85%';
+    currentVaultBlob = new Blob([JSON.stringify(vault)], { type: 'application/json' });
+    renderVaultSummary(vault);
+
+    if (document.getElementById('saveToFileManager').checked) {
+      await dbPut({ ...vault, displayName: vault.fileName, savedAt: new Date().toISOString() });
+      renderFileManager();
+    }
+
+    const url = new URL(window.location.href);
+    url.search = ''; url.hash = '';
+    url.searchParams.set('v', vault.id);
+    const link = url.toString();
+
+    if (shareLink) { shareLink.href = link; shareLink.textContent = link; shareLink.classList.remove('is-hidden'); }
+    const shareLinkAside = document.getElementById('shareLinkAside');
+    const copyBtn = document.getElementById('copyShareLinkBtn');
+    if (shareLinkAside) { shareLinkAside.textContent = link; shareLinkAside.classList.remove('is-hidden'); }
+    if (copyBtn) {
+      copyBtn.classList.remove('is-hidden');
+      copyBtn.onclick = () => navigator.clipboard?.writeText(link).then(() => toast(t('fm.linkCopied'), 'success'));
+    }
+    document.getElementById('sharePdfCard').classList.add('is-ready');
+
+    lastVaultRecap = { vault, password, link, generatedAt: new Date().toISOString() };
+    updatePdfRecapCard(lastVaultRecap);
+
+    downloadBtn.disabled = false;
+    pdfBtn.disabled = false;
+    downloadBtn.onclick = async () => {
+      await downloadBlob(currentVaultBlob, `${vault.fileName || 'vault'}.vault`);
+    };
+
+    progressBar.style.width = '100%';
+    statusEl.textContent = clamped ? `${t('create.success')} ${t('create.expiryClamped')}` : t('create.success');
+    statusEl.className = 'win-status is-success';
+    setStatus('', t('status.done'));
+    setTimeout(() => setStatus('', t('status.ready')), 2500);
+    logActivity(t('activity.created', { file: vault.fileName }));
+    toast(t('create.success'), 'success');
+  } catch (error) {
+    statusEl.textContent = error.message;
+    statusEl.className = 'win-status is-error';
+    setStatus('error', t('status.error'));
+    setTimeout(() => setStatus('', t('status.ready')), 3000);
+    toast(error.message, 'error');
+  } finally {
+    setBtnBusy(createBtn, false);
+    setTimeout(() => progress.classList.add('is-hidden'), 500);
+  }
+});
+
+/* ============================================
+   OPEN VAULT
+   ============================================ */
+document.getElementById('openVaultBtn').addEventListener('click', async () => {
+  const file = document.getElementById('vaultInput').files[0];
+  const password = document.getElementById('unlockPassword').value;
+  const statusEl = document.getElementById('openStatus');
+  const downloadBtn = document.getElementById('downloadOpenBtn');
+  const previewEl = document.getElementById('openPreview');
+  const openBtn = document.getElementById('openVaultBtn');
+  const progress = document.getElementById('openProgress');
+  const progressBar = document.getElementById('openProgressBar');
+
+  downloadBtn.disabled = true;
+
+  if (!file) { statusEl.textContent = t('open.errorFile'); statusEl.className = 'win-status is-error'; return; }
+  if (!password) { statusEl.textContent = t('open.errorPassword'); statusEl.className = 'win-status is-error'; return; }
+
+  statusEl.textContent = t('open.decrypting');
+  statusEl.className = 'win-status';
+  setStatus('busy', t('status.busy'));
+  setBtnBusy(openBtn, true);
+  progress.classList.remove('is-hidden');
+  progressBar.style.width = '40%';
+
+  try {
+    const vaultText = await file.text();
+    const vault = JSON.parse(vaultText);
+    progressBar.style.width = '70%';
+
+    let record = await dbGet(vault.id);
+    const workingVault = record || vault;
+    const { blob, fileBytes } = await decryptVault(workingVault, password);
+
+    workingVault.openCount = (workingVault.openCount || 0) + 1;
+    workingVault.lastOpenedAt = new Date().toISOString();
+    if (document.getElementById('openSaveToFileManager').checked) {
+      const toSave = record ? workingVault : { ...vault, ...workingVault, displayName: vault.fileName, savedAt: new Date().toISOString() };
+      await dbPut(toSave);
+      renderFileManager();
+    }
+
+    currentDecryptedBlob = blob;
+    currentDecryptedName = vault.fileName;
+    const decoder = new TextDecoder();
+    const previewText = decoder.decode(fileBytes.slice(0, 400));
+    if (vault.mimeType.startsWith('text/') || vault.mimeType.includes('json')) {
+      previewEl.innerHTML = `<pre style="white-space:pre-wrap; margin:0; font-family:Consolas, monospace; font-size:12px;">${escapeHtml(previewText)}${previewText.length < fileBytes.length ? '...' : ''}</pre>`;
+    } else {
+      previewEl.innerHTML = `<p style="margin:0;">${t('open.binary')}</p>`;
+    }
+
+    downloadBtn.disabled = false;
+    downloadBtn.onclick = async () => {
+      await downloadBlob(currentDecryptedBlob, currentDecryptedName);
+    };
+
+    progressBar.style.width = '100%';
+    statusEl.textContent = t('open.success');
+    statusEl.className = 'win-status is-success';
+    setStatus('', t('status.done'));
+    setTimeout(() => setStatus('', t('status.ready')), 2500);
+    logActivity(t('activity.opened', { file: vault.fileName }));
+    toast(t('open.success'), 'success');
+  } catch (error) {
+    statusEl.textContent = error.message;
+    statusEl.className = 'win-status is-error';
+    setStatus('error', t('status.error'));
+    setTimeout(() => setStatus('', t('status.ready')), 3000);
+    toast(error.message, 'error');
+  } finally {
+    setBtnBusy(openBtn, false);
+    setTimeout(() => progress.classList.add('is-hidden'), 500);
+  }
+});
+
+/* ============================================
+   KEYBOARD SHORTCUTS
+   ============================================ */
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key.toLowerCase() === 'n') { e.preventDefault(); switchView('create'); }
+  if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); switchView('open'); }
+  if (e.ctrlKey && e.key.toLowerCase() === 'f') { e.preventDefault(); document.getElementById('globalSearch').focus(); }
+});
+
+/* ============================================
+   SHARE LINK RESOLUTION (?v=id)
+   ============================================ */
+async function resolveSharedLink() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('v');
+  if (!id) return;
+  const record = await dbGet(id);
+  if (!record) { toast(t('fm.notFoundShared'), 'error'); return; }
+  switchView('filemanager');
+  setTimeout(() => fmUnlockFlow(id), 300);
+}
+
+/* ============================================
+   INIT
+   ============================================ */
+applyTheme();
+applyLanguage();
+updateSecurityLevel(document.getElementById('securityLevel').value);
+renderActivity();
+renderFileManager();
+resolveSharedLink();
+</script>
+
+</body>
+</html>
