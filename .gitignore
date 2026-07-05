@@ -30,3 +30,8 @@ src-tauri/target/
 node_modules/
 
 src-tauri/eeeeeee
+
+src-tauri/eeeeeee
+*.apk
+*.vault
+*.pdf
